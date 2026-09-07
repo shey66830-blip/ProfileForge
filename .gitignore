@@ -20,3 +20,6 @@ cookies.txt
 
 # User-uploaded resumes (runtime data)
 server/uploads/
+
+# Vite cache
+client/.vite/
