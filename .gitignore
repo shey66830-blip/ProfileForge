@@ -1,0 +1,22 @@
+# Environment and secrets
+.env
+.env.local
+.env.*.local
+.env.example
+
+# Dependencies
+node_modules/
+client/node_modules/
+server/node_modules/
+
+# Build outputs
+client/dist/
+.DS_Store
+Thumbs.db
+
+# Local tooling / agent artifacts
+.freebuff/
+cookies.txt
+
+# User-uploaded resumes (runtime data)
+server/uploads/
