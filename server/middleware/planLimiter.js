@@ -51,7 +51,7 @@ export function checkLimit(feature) {
       req.usage = usage;
       req.featureLimit = { used, limit, remaining: limit - used };
       next();
-    } catch (err) {
+    } catch {
       next();
     }
   };

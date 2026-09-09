@@ -1,6 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { analyzeResumeJob, compareResumeJob } from "../services/aiService.js";
-import { AI_MODELS } from "../utils/aiModels.js"; // shared with aiEditor.jsx
+import { AI_MODELS, DEFAULT_MODEL } from "../utils/aiModels.js"; // shared with aiEditor.jsx
 
 async function uploadAndCreateResume(file, onDocumentsChange) {
   const fd = new FormData();
@@ -64,7 +64,7 @@ export default function ResumeJobAnalysis({ documents, onAnalysisResult, onCompa
   const [jobTitle, setJobTitle] = useState("");
   const [jobCompany, setJobCompany] = useState("");
   const [jobDescription, setJobDescription] = useState("");
-  const [selectedModel, setSelectedModel] = useState(AI_MODELS[0]);
+  const [selectedModel, setSelectedModel] = useState(DEFAULT_MODEL);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [analysis, setAnalysis] = useState(null);
@@ -79,7 +79,17 @@ export default function ResumeJobAnalysis({ documents, onAnalysisResult, onCompa
 
   const selectedDoc = documents.find((doc) => doc._id === selectedId);
 
-  const OPENROUTER_PAIR = AI_MODELS.filter((m) => m.provider === "openrouter");
+  // Documents load asynchronously (AppContext fetches them after mount), so the
+  // initial selectedId may be empty while the browser still renders the first
+  // option as "selected". Sync once they arrive; otherwise Analyze rejects with
+  // "Please select a resume first" even though a resume appears picked.
+  useEffect(() => {
+    if (!selectedId && documents.length > 0) {
+      setSelectedId(documents[0]._id);
+    }
+  }, [documents, selectedId]);
+
+  const EXPERIENTIAL_PAIR = AI_MODELS.filter((m) => m.provider === "experiential");
 
   const handleAnalyze = async () => {
     if (!selectedDoc) {
@@ -137,10 +147,12 @@ export default function ResumeJobAnalysis({ documents, onAnalysisResult, onCompa
 
     // Compare is always GPT-6 Astra vs Claude Fable 5.1. When one of them is
     // already selected it stays model A; otherwise the pair is used as-is.
-    const [astra, claude] = OPENROUTER_PAIR;
+    // (Order-independent: pick by model ID, not list position.)
+    const astra = EXPERIENTIAL_PAIR.find((m) => m.model === "gpt-6-astra");
+    const claude = EXPERIENTIAL_PAIR.find((m) => m.model === "claude-fable-5.1");
     let modelA = astra;
     let modelB = claude;
-    if (selectedModel.provider === "openrouter") {
+    if (selectedModel.provider === "experiential") {
       modelA = selectedModel;
       modelB = selectedModel.model === astra.model ? claude : astra;
     }
@@ -343,7 +355,7 @@ export default function ResumeJobAnalysis({ documents, onAnalysisResult, onCompa
                 onChange={(e) => {
                   const next = AI_MODELS.find(
                     (m) => `${m.provider}::${m.model}` === e.target.value
-                  ) || AI_MODELS[0];
+                  ) || DEFAULT_MODEL;
                   setSelectedModel(next);
                 }}
               >
@@ -543,8 +555,16 @@ function AnalysisResult({ analysis, modelLabel, qualError }) {
   );
 }
 
-function QualBlock({ qualitative }) {
-  if (!qualitative) return null;
+function QualBlock({ qualitative, error }) {
+  if (!qualitative && !error) return null;
+  if (!qualitative) {
+    return (
+      <div style={{ marginTop: 10 }}>
+        <span className="badge">AI insight unavailable</span>
+        <p className="muted" style={{ margin: "6px 0 0" }}>{error}</p>
+      </div>
+    );
+  }
   return (
     <div style={{ marginTop: 10 }}>
       <span className="badge">AI-generated insight</span>
@@ -569,6 +589,15 @@ function ComparisonResult({ comparison }) {
   const a = comparison?.modelA?.analysis;
   const b = comparison?.modelB?.analysis;
   const dim = comparison?.dimensionComparison || {};
+
+  // Render one shared value when both models agree, or an "A vs B" pair when
+  // they disagree. Without this, an agreed dimension shows a misleading
+  // "35 vs —" because the server only emits valueB on disagreement.
+  const fmtDim = (d) => {
+    if (!d) return "—";
+    if (d.agreement === "agree") return `${d.value ?? "—"} (both)`;
+    return `${d.valueA ?? "—"} vs ${d.valueB ?? "—"}`;
+  };
 
   return (
     <section className="card analysis-result">
@@ -599,7 +628,7 @@ function ComparisonResult({ comparison }) {
               </div>
             </div>
           ) : null}
-          <QualBlock qualitative={a?.qualitative} />
+          <QualBlock qualitative={a?.qualitative} error={comparison?.modelA?.qualitativeError} />
         </div>
         <div className="comparison-column">
           <h3>{comparison?.modelB?.model || "Model B"}</h3>
@@ -624,7 +653,7 @@ function ComparisonResult({ comparison }) {
               </div>
             </div>
           ) : null}
-          <QualBlock qualitative={b?.qualitative} />
+          <QualBlock qualitative={b?.qualitative} error={comparison?.modelB?.qualitativeError} />
         </div>
       </div>
 
@@ -632,21 +661,15 @@ function ComparisonResult({ comparison }) {
         <div className="comparison-dimension">
           <span>Overall</span>
           <span>
-            {dim.overall?.agreement === "agree"
-              ? "Agree"
-              : "Disagree"}{" "}
-            {dim.overall?.value ?? dim.overall?.valueA ?? "—"} vs{" "}
-            {dim.overall?.valueB ?? "—"}
+            {dim.overall?.agreement === "agree" ? "Agree" : "Disagree"}{" "}
+            {fmtDim(dim.overall)}
           </span>
         </div>
         <div className="comparison-dimension">
           <span>Skill match</span>
           <span>
-            {dim.skillMatch?.agreement === "agree"
-              ? "Agree"
-              : "Disagree"}{" "}
-            {dim.skillMatch?.value ?? dim.skillMatch?.valueA ?? "—"} vs{" "}
-            {dim.skillMatch?.valueB ?? "—"}
+            {dim.skillMatch?.agreement === "agree" ? "Agree" : "Disagree"}{" "}
+            {fmtDim(dim.skillMatch)}
           </span>
         </div>
         <div className="comparison-dimension">
@@ -655,8 +678,7 @@ function ComparisonResult({ comparison }) {
             {dim.experienceMatch?.agreement === "agree"
               ? "Agree"
               : "Disagree"}{" "}
-            {dim.experienceMatch?.value ?? dim.experienceMatch?.valueA ?? "—"} vs{" "}
-            {dim.experienceMatch?.valueB ?? "—"}
+            {fmtDim(dim.experienceMatch)}
           </span>
         </div>
         <div className="comparison-dimension">
@@ -665,8 +687,7 @@ function ComparisonResult({ comparison }) {
             {dim.educationMatch?.agreement === "agree"
               ? "Agree"
               : "Disagree"}{" "}
-            {dim.educationMatch?.value ?? dim.educationMatch?.valueA ?? "—"} vs{" "}
-            {dim.educationMatch?.valueB ?? "—"}
+            {fmtDim(dim.educationMatch)}
           </span>
         </div>
       </div>

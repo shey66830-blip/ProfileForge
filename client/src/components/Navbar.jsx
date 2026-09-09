@@ -6,18 +6,21 @@ const NAV_ITEMS = [
   { path: "/dashboard", label: "Dashboard" },
   { path: "/builder/resume", label: "Resume", action: "resume" },
   { path: "/builder/cv", label: "CV", action: "cv" },
+  { path: "/profile-builder", label: "Profile" },
+  { path: "/tailoring", label: "Tailor" },
   { path: "/ai-editor", label: "AI Edit" },
   { path: "/jobs", label: "Jobs" },
   { path: "/saved-jobs", label: "Saved" },
   { path: "/applications", label: "Apps" },
   { path: "/resume-job-analysis", label: "Compare" },
+  { path: "/export-ats", label: "Export" },
   { path: "/courses", label: "Learn" },
 ];
 
 const MOBILE_ICONS = {
-  "/dashboard": "📊", "/builder/resume": "📄", "/builder/cv": "📋", "/ai-editor": "🤖",
-  "/jobs": "💼", "/saved-jobs": "♡", "/applications": "📈", "/resume-job-analysis": "⚖️",
-  "/courses": "📚",
+  "/dashboard": "📊", "/builder/resume": "📄", "/builder/cv": "📋", "/profile-builder": "👤",
+  "/tailoring": "✂️", "/ai-editor": "🤖", "/jobs": "💼", "/saved-jobs": "♡",
+  "/applications": "📈", "/resume-job-analysis": "⚖️", "/export-ats": "📥", "/courses": "📚",
 };
 
 export default function Navbar({ openBuilder, user, logout }) {
@@ -72,8 +75,8 @@ export default function Navbar({ openBuilder, user, logout }) {
 
   return (
     <>
-      <nav className="navbar" data-scrolled={scrolled || undefined}>
-        <div className="brand" onClick={() => navigate("/")}>
+      <nav className="navbar" data-scrolled={scrolled || undefined} aria-label="Main navigation">
+        <div className="brand" onClick={() => navigate("/")} role="button" tabIndex={0} onKeyDown={(e) => e.key === 'Enter' && navigate('/')} aria-label="ProfileForge home">
           <span className="brand-mark">PF</span>
           <span className="brand-name">ProfileForge</span>
         </div>
@@ -86,10 +89,10 @@ export default function Navbar({ openBuilder, user, logout }) {
         </div>
 
         <div className="nav-right">
-          <button className="nav-theme" onClick={toggleTheme} title="Toggle theme">{theme === "dark" ? "☾" : "☀"}</button>
+          <button className="nav-theme" onClick={toggleTheme} title="Toggle theme" aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}>{theme === "dark" ? "☾" : "☀"}</button>
           {user ? (
             <div className="nav-user" ref={dropRef}>
-              <button className="nav-avatar" onClick={() => setUserDrop(!userDrop)}>{initials}{plan === "pro" && <span className="plan-badge plan-pro">PRO</span>}{plan === "premium" && <span className="plan-badge plan-premium">PREM</span>}<svg className="nav-chevron" width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2.5 4L5 6.5L7.5 4" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
+              <button className="nav-avatar" onClick={() => setUserDrop(!userDrop)} aria-expanded={userDrop} aria-haspopup="true" aria-label="User menu">{initials}{plan === "pro" && <span className="plan-badge plan-pro">PRO</span>}{plan === "premium" && <span className="plan-badge plan-premium">PREM</span>}<svg className="nav-chevron" width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2.5 4L5 6.5L7.5 4" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg></button>
               {userDrop && (
                 <div className="nav-dropdown">
                   <button onClick={() => { navigate("/profile"); setUserDrop(false); }}>👤 Profile</button>
@@ -107,11 +110,11 @@ export default function Navbar({ openBuilder, user, logout }) {
 
       <div className="nav-mobile">
         <button className="nav-theme" onClick={toggleTheme}>{theme === "dark" ? "☾" : "☀"}</button>
-        <button className="nav-hamburger" onClick={() => setMobileOpen(!mobileOpen)} data-open={mobileOpen || undefined}><span /><span /><span /></button>
+        <button className="nav-hamburger" onClick={() => setMobileOpen(!mobileOpen)} data-open={mobileOpen || undefined} aria-expanded={mobileOpen} aria-label="Toggle navigation menu"><span /><span /><span /></button>
       </div>
 
       {mobileOpen && <div className="nav-overlay" onClick={() => setMobileOpen(false)} />}
-      <div className="nav-sidebar" data-open={mobileOpen || undefined} ref={sidebarRef}>
+      <div className="nav-sidebar" data-open={mobileOpen || undefined} ref={sidebarRef} role="dialog" aria-label="Navigation menu" aria-modal={mobileOpen}>
         <div className="sidebar-head"><span className="brand-mark">PF</span><span className="brand-name">ProfileForge</span></div>
         <div className="sidebar-links">
           {NAV_ITEMS.map((item) => (

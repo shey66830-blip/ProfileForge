@@ -7,7 +7,7 @@ const FREE_FEATURES = [
   { icon: "📄", title: "Resume Builder", desc: "Build professional resumes with AI assistance, multiple templates, and PDF export.", link: "/builder/resume" },
   { icon: "📋", title: "CV Builder", desc: "Create detailed CVs for academic and professional applications.", link: "/builder/cv" },
   { icon: "🤖", title: "AI Editor", desc: "Polish, rewrite and optimize your documents with AI suggestions.", link: "/ai-editor" },
-  { icon: "💼", title: "Job Search", desc: "AI-powered job matching from 4 sources with skill analysis.", link: "/jobs" },
+  { icon: "💼", title: "Job Search", desc: "AI-powered job matching from 7 sources with skill analysis.", link: "/jobs" },
   { icon: "📈", title: "Application Tracker", desc: "Track your job applications, interviews, and offers in one place.", link: "/applications" },
   { icon: "⚖️", title: "Resume vs Job Compare", desc: "Compare your resume against any job description to find skill gaps.", link: "/resume-job-analysis" },
   { icon: "💾", title: "Saved Jobs", desc: "Bookmark interesting jobs and review them later.", link: "/saved-jobs" },
@@ -24,7 +24,7 @@ const PREMIUM_FEATURES = [
 const HOW_IT_WORKS = [
   { step: "1", icon: "📄", title: "Upload or Build", desc: "Upload your existing resume or build one from scratch using our AI-powered builder." },
   { step: "2", icon: "🤖", title: "AI Analyzes", desc: "Our AI extracts skills, calculates ATS score, and identifies your career profile." },
-  { step: "3", icon: "💼", title: "Match & Apply", desc: "Get matched with jobs from 4 sources, track applications, and land your dream role." },
+  { step: "3", icon: "💼", title: "Match & Apply", desc: "Get matched with jobs from 7 sources, track applications, and land your dream role." },
 ];
 
 const FAQ_DATA = [
@@ -87,7 +87,7 @@ export default function Home({ user, openBuilder }) {
           </div>
           <div className="hero-stats">
             <div><strong>8+</strong><span>Free Features</span></div>
-            <div><strong>4</strong><span>Job Sources</span></div>
+            <div><strong>7</strong><span>Job Sources</span></div>
             <div><strong>AI</strong><span>Powered</span></div>
           </div>
         </div>

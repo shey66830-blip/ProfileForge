@@ -3,6 +3,7 @@ import {
   buildAnalysisEnvelope,
   analyzeQualitativeWithRetry,
 } from "./resumeJobAnalyzer.js";
+import { humanizeProviderError } from "./aiProvider.js";
 
 export function computeAgreementItem(a, b) {
   if (a === b) {
@@ -31,21 +32,31 @@ export async function analyzeWithModel({
     ats,
   });
 
-  const qualitative = await analyzeQualitativeWithRetry({
-    providerClient,
-    model,
-    resume,
-    resumeAnalysis,
-    jobProfile,
-    matchResult,
-    ats,
-  });
+  // Per-model containment: a qualitative (LLM) failure degrades only this
+  // model's AI insight — the deterministic match still renders, and the
+  // humanized reason travels with the result instead of killing the comparison.
+  let qualitative = null;
+  let qualitativeError = "";
+  try {
+    qualitative = await analyzeQualitativeWithRetry({
+      providerClient,
+      model,
+      resume,
+      resumeAnalysis,
+      jobProfile,
+      matchResult,
+      ats,
+    });
+  } catch (err) {
+    qualitativeError = humanizeProviderError(err);
+  }
 
   return {
     model,
     provider: providerClient.provider,
     match: matchResult,
     qualitative,
+    qualitativeError,
   };
 }
 
@@ -125,11 +136,13 @@ export async function compareModels({
       model: resultA.model,
       provider: resultA.provider,
       analysis: envelopeA,
+      qualitativeError: resultA.qualitativeError || "",
     },
     modelB: {
       model: secondResult.model,
       provider: secondResult.provider,
       analysis: dimB === resultA.match ? null : secondEnvelope,
+      qualitativeError: secondResult.qualitativeError || "",
     },
     dimensionComparison: {
       overall: overallAgreement,

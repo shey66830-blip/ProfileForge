@@ -1,47 +1,55 @@
 import OpenAI from "openai";
 
-const DEFAULT_MODEL = "gpt-4o-mini";
-const OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1";
-const SUPPORTED_PROVIDERS = ["openai", "openrouter"];
+const OPENAI_FALLBACK_MODEL = "gpt-4o-mini"; // legacy provider; not the app default
+const OPENAI_BASE_MODEL = "gpt-4o-mini";
+const EXPERIENTIAL_BASE_URL = "https://api.experientiallabs.ai/v1";
+const SUPPORTED_PROVIDERS = ["openai", "experiential"];
+
+// App-wide default: must be a model that actually works with the configured
+// server keys. claude-fable-5.1 on Experiential is verified live; the OpenAI
+// key is currently dead (401) and gpt-6-astra is payment-gated upstream, so
+// they remain selectable but never become defaults.
+const DEFAULT_PROVIDER = "experiential";
+const DEFAULT_MODEL = "claude-fable-5.1";
 
 const PROVIDER_MODELS = {
   openai: {
-    default: DEFAULT_MODEL,
+    default: OPENAI_FALLBACK_MODEL,
     allowed: [
-      DEFAULT_MODEL,
+      OPENAI_BASE_MODEL,
     ],
   },
-  openrouter: {
-    default: "openai/gpt-6-astra",
+  experiential: {
+    default: DEFAULT_MODEL,
     allowed: [
-      "openai/gpt-6-astra",
-      "anthropic/claude-fable-5.1",
+      "gpt-6-astra",
+      DEFAULT_MODEL,
     ],
   },
 };
 
-function getProviderClient(provider = "openai", model = DEFAULT_MODEL) {
+function getProviderClient(provider = DEFAULT_PROVIDER, model = DEFAULT_MODEL) {
   if (!SUPPORTED_PROVIDERS.includes(provider)) {
-    provider = "openai";
+    provider = DEFAULT_PROVIDER;
   }
 
-  const providerConfig = PROVIDER_MODELS[provider] || PROVIDER_MODELS.openai;
+  const providerConfig = PROVIDER_MODELS[provider] || PROVIDER_MODELS[DEFAULT_PROVIDER];
   if (!providerConfig.allowed.includes(model)) {
     model = providerConfig.default;
   }
 
-  if (provider === "openrouter") {
-    const apiKey = process.env.OPENROUTER_API_KEY;
+  if (provider === "experiential") {
+    const apiKey = process.env.EXPERIENTIAL_API_KEY || process.env.OPENROUTER_API_KEY;
     if (!apiKey) {
       throw new Error(
-        "OPENROUTER_API_KEY is not set server-side. OpenRouter calls are not available."
+        "EXPERIENTIAL_API_KEY is not set server-side. Experiential Labs calls are not available."
       );
     }
     return {
       provider,
       client: new OpenAI({
         apiKey,
-        baseURL: OPENROUTER_BASE_URL,
+        baseURL: EXPERIENTIAL_BASE_URL,
       }),
       model,
     };
@@ -65,10 +73,12 @@ export function resolveChatConfig(reqBody = {}) {
   const requestedProvider = typeof reqBody.provider === "string" ? reqBody.provider.trim().toLowerCase() : "";
   const requestedModel = typeof reqBody.model === "string" ? reqBody.model.trim() : "";
 
+  // Honor any explicitly supported provider (including legacy openai);
+  // only unknown/missing values fall back to the app default.
   const provider =
-    SUPPORTED_PROVIDERS.includes(requestedProvider) && requestedProvider !== "openai"
+    SUPPORTED_PROVIDERS.includes(requestedProvider)
       ? requestedProvider
-      : "openai";
+      : DEFAULT_PROVIDER;
 
   const modelConfig = PROVIDER_MODELS[provider];
   const defaultModel = modelConfig.default;
@@ -89,13 +99,23 @@ export async function chatCompletion({ provider, client, model, messages, temper
     messages,
   };
 
-  if (stream) {
-    return client.chat.completions.create(params);
+  // Some gateway model routes restrict sampling (e.g. temperature must be
+  // exactly 1.0). The rejection is a 400 naming the parameter — retry once
+  // without it so the route's own default applies.
+  try {
+    const response = await client.chat.completions.create(params);
+    const text = response.choices[0]?.message?.content?.trim() || "";
+    return { text };
+  } catch (err) {
+    const msg = String(err?.message || "");
+    if (/temperature.*not supported|not supported.*temperature/i.test(msg)) {
+      const { temperature: _omit, ...rest } = params;
+      const response = await client.chat.completions.create(rest);
+      const text = response.choices[0]?.message?.content?.trim() || "";
+      return { text };
+    }
+    throw err;
   }
-
-  const response = await client.chat.completions.create(params);
-  const text = response.choices[0]?.message?.content?.trim() || "";
-  return { text };
 }
 
 // Maps provider/SDK failures to safe, human-readable messages.
@@ -105,10 +125,18 @@ export function humanizeProviderError(err) {
   if (err?.code === "ECONNREFUSED" || /fetch failed|network|ENOTFOUND|ETIMEDOUT/i.test(msg)) {
     return "The AI service could not be reached. Please try again in a moment.";
   }
+  // Payment/credit gating can arrive with any status code (402, 403, 400…),
+  // so match the wording first — it is the most reliable signal.
+  if (/payment|pre-?paid|credit|billing|top.?up|upgrade your plan|requires a payment/i.test(msg)) {
+    return "This AI model needs payment set up on the provider account. Add a card / top up credits on the provider's billing page, then try again.";
+  }
   if (err?.status === 401 || /401|authentication|api key|unauthorized/i.test(msg)) {
     return "The AI service rejected its credentials. The server API key appears to be invalid or expired — please update it in the server .env.";
   }
   if (err?.status === 429 || /rate limit|too many requests/i.test(msg)) {
+    if (/card on file|top up|payment|credits page/i.test(msg)) {
+      return "The AI model's free tier needs a small payment to unlock it. Please add a card / top up on the provider's Credits page, then retry.";
+    }
     return "The AI service is rate-limiting requests. Please wait a bit and try again.";
   }
   if (err?.status === 402 || /insufficient|credits|quota/i.test(msg)) {

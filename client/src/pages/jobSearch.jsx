@@ -3,7 +3,7 @@ import { API_BASE } from "../config.js";
 import { saveJob, unsaveJob, getSavedJobs } from "../services/savedJobService.js";
 import { AppContext } from "../App.jsx";
 
-import SearchFilters from "../components/jobSearch/SearchFilters.jsx";
+import SearchFilters, { ALL_JOB_SOURCES } from "../components/jobSearch/SearchFilters.jsx";
 import ResumeSelector from "../components/jobSearch/ResumeSelector.jsx";
 import LocationSelector from "../components/jobSearch/LocationSelector.jsx";
 import SearchSummary from "../components/jobSearch/SearchSummary.jsx";
@@ -27,7 +27,7 @@ export default function JobSearch({ documents = [] }) {
   const [selectedResume, setSelectedResume] = useState("");
   const [keyword, setKeyword] = useState("");
   const [showFilters, setShowFilters] = useState(false);
-  const [filters, setFilters] = useState({ lookingFor:"both", domain:"", specialization:"", experience:"fresher", workMode:"any", employmentType:"all", salary:"any", country:"", state:"", city:"" });
+  const [filters, setFilters] = useState({ lookingFor:"both", domain:"", specialization:"", experience:"fresher", workMode:"any", employmentType:"all", salary:"any", country:"all", state:"", city:"", sources: [...ALL_JOB_SOURCES] });
 
   const [allJobs, setAllJobs] = useState([]);
   const [filteredJobs, setFilteredJobs] = useState([]);
@@ -48,6 +48,16 @@ export default function JobSearch({ documents = [] }) {
   const selectedDoc = documents.find(d => d._id === selectedResume);
 
   useEffect(() => { getSavedJobs().then(s => setSavedJobIds(new Set(s.map(j => j.jobId)))); }, []);
+
+  // Default-select the first resume once documents finish loading async
+  // (state starts empty at mount, which made Analyze refuse a visibly
+  // selected resume). Also re-syncs if the selected doc disappears.
+  useEffect(() => {
+    if (documents.length === 0) return;
+    if (!selectedResume || !documents.some(d => d._id === selectedResume)) {
+      setSelectedResume(documents[0]._id);
+    }
+  }, [documents]);
 
   async function handleToggleSave(job) {
     if (savedJobIds.has(job.id)) { await unsaveJob(job.id); setSavedJobIds(p => { const n = new Set(p); n.delete(job.id); return n; }); }
@@ -86,6 +96,7 @@ export default function JobSearch({ documents = [] }) {
     try {
       const resumeText = selectedDoc?.generatedText || "";
       const params = new URLSearchParams({ search: filters.specialization || filters.domain || "", category: filters.domain || "", country: filters.country || "all", resumeText });
+      if (Array.isArray(filters.sources) && filters.sources.length > 0) params.set("sources", filters.sources.join(","));
       const res = await fetch(API_BASE + "/jobs?" + params, { credentials: "include" });
       const result = await res.json();
       if (result.success) { const f = applyFiltersAndSort(result.jobs, filters, null, "", sortBy); setAllJobs(f); setFilteredJobs(f); setQuickFilter(null); }

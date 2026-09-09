@@ -1,0 +1,79 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [18, 20]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      # Root-level linting and formatting
+      - name: Install root dependencies
+        run: npm install
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Check formatting
+        run: npm run format:check
+
+      # Server
+      - name: Install server dependencies
+        run: cd server && npm install
+
+      - name: Server tests
+        run: cd server && npm test
+        env:
+          MONGO_URI: mongodb://localhost:27017/profileforge-test
+          JWT_SECRET: test-secret-key-that-is-at-least-32-characters-long
+
+      # Client
+      - name: Install client dependencies
+        run: cd client && npm install
+
+      - name: Client tests
+        run: cd client && npm test
+
+      - name: Client build
+        run: cd client && npm run build
+
+  server-health:
+    runs-on: ubuntu-latest
+    needs: lint-and-test
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install server dependencies
+        run: cd server && npm install
+
+      - name: Verify server modules load
+        run: |
+          cd server && node -e "
+          Promise.all([
+            import('./controllers/aiController.js').then(() => '> controller OK'),
+            import('./services/aiProvider.js').then(() => '> aiProvider OK'),
+            import('./routes/aiRoutes.js').then(() => '> aiRoutes OK'),
+            import('./routes/uploadRoutes.js').then(() => '> uploadRoutes OK'),
+            import('./routes/applicationRoutes.js').then(() => '> applicationRoutes OK'),
+            import('./routes/documentRoutes.js').then(() => '> documentRoutes OK'),
+          ]).then(r => console.log(r.join('\n'))).catch(e => { console.error(e.message); process.exit(1); })
+          "

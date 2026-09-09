@@ -1,19 +1,24 @@
-import React from "react";
+import React, { useState } from "react";
 
-const countries = [
-  "Auto Detect",
-  "India",
-  "United States",
-  "United Kingdom",
-  "Canada",
-  "Australia",
-  "Germany",
-  "France",
-  "Singapore",
-  "Japan",
-  "UAE",
-  "Worldwide",
+// Popular destinations for the dropdown. Anything not listed can be typed
+// free-form via "Other…" — the server's country directory resolves names,
+// aliases, ISO codes, and even "City, Country" input, and uses it as a
+// natural-language location for sources like JSearch.
+const COUNTRIES = [
+  "India", "United States", "United Kingdom", "Canada", "Australia",
+  "Germany", "Singapore", "United Arab Emirates", "Netherlands",
+  "Ireland", "France", "Spain", "Italy", "Poland", "Portugal",
+  "Switzerland", "Sweden", "Norway", "Denmark", "Finland", "Belgium",
+  "Austria", "Japan", "South Korea", "China", "Hong Kong", "Taiwan",
+  "Malaysia", "Indonesia", "Philippines", "Thailand", "Vietnam",
+  "New Zealand", "Saudi Arabia", "Qatar", "Kuwait", "Bahrain", "Oman",
+  "Israel", "Turkey", "Egypt", "South Africa", "Nigeria", "Kenya",
+  "Morocco", "Brazil", "Mexico", "Argentina", "Chile", "Colombia",
+  "Peru", "Czech Republic", "Romania", "Greece", "Hungary", "Ukraine",
+  "Pakistan", "Bangladesh", "Sri Lanka", "Nepal",
 ];
+
+const OTHER = "__other__";
 
 const indianStates = [
   "Select State",
@@ -46,12 +51,22 @@ export default function LocationSelector({
   filters,
   setFilters,
 }) {
+  const [otherMode, setOtherMode] = useState(false);
+
   const update = (field, value) => {
     setFilters((prev) => ({
       ...prev,
       [field]: value,
     }));
   };
+
+  const selectValue =
+    otherMode || (filters.country !== "all" && filters.country && !COUNTRIES.includes(filters.country))
+      ? OTHER
+      : (filters.country || "all");
+
+  const isIndia = filters.country === "India";
+  const showOtherInput = selectValue === OTHER;
 
   return (
     <section className="card">
@@ -68,15 +83,23 @@ export default function LocationSelector({
 
         <div>
 
-          <label>Country</label>
+          <label>Country / Region</label>
 
           <select
-            value={filters.country}
-            onChange={(e) =>
-              update("country", e.target.value)
-            }
+            value={selectValue}
+            onChange={(e) => {
+              const v = e.target.value;
+              if (v === OTHER) {
+                setOtherMode(true);
+                update("country", "");
+              } else {
+                setOtherMode(false);
+                update("country", v);
+              }
+            }}
           >
-            {countries.map((country) => (
+            <option value="all">🌍 Worldwide (default)</option>
+            {COUNTRIES.map((country) => (
               <option
                 key={country}
                 value={country}
@@ -84,43 +107,66 @@ export default function LocationSelector({
                 {country}
               </option>
             ))}
+            <option value={OTHER}>Other (type any country)…</option>
           </select>
 
         </div>
 
         <div>
 
-          <label>State</label>
-
-          <select
-            value={filters.state}
-            onChange={(e) =>
-              update("state", e.target.value)
-            }
-          >
-            {indianStates.map((state) => (
-              <option
-                key={state}
-                value={state}
-              >
-                {state}
-              </option>
-            ))}
-          </select>
+          {showOtherInput ? (
+            <>
+              <label>Any country or city</label>
+              <input
+                autoFocus
+                placeholder="e.g. Tokyo, Japan"
+                value={filters.country}
+                onChange={(e) => update("country", e.target.value)}
+              />
+            </>
+          ) : (
+            <>
+              <label>City</label>
+              <input
+                placeholder="Enter City"
+                value={filters.city}
+                onChange={(e) =>
+                  update("city", e.target.value)
+                }
+              />
+            </>
+          )}
 
         </div>
 
         <div>
 
-          <label>City</label>
+          <label>State (India)</label>
 
-          <input
-            placeholder="Enter City"
-            value={filters.city}
-            onChange={(e) =>
-              update("city", e.target.value)
-            }
-          />
+          {isIndia ? (
+            <select
+              value={filters.state}
+              onChange={(e) =>
+                update("state", e.target.value)
+              }
+            >
+              {indianStates.map((state) => (
+                <option
+                  key={state}
+                  value={state}
+                >
+                  {state}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <input
+              disabled
+              placeholder="— country-wide search —"
+              value=""
+              onChange={() => {}}
+            />
+          )}
 
         </div>
 
@@ -197,36 +243,18 @@ export default function LocationSelector({
       >
 
         <h3>
-          📍 Smart Location Detection
+          🌍 Search Anywhere
         </h3>
 
         <p>
 
-          Final version automatically detects
+          Pick <b>Worldwide</b> for the widest global results, choose a country
 
-          <br />
+          from the list, or select <b>Other</b> and type any country or city —
 
-          • Country
+          jobs are pulled from 7 international sources and matched to your
 
-          <br />
-
-          • State
-
-          <br />
-
-          • City
-
-          <br />
-
-          • Nearby opportunities
-
-          <br />
-
-          • Remote opportunities
-
-          <br />
-
-          using IP + Browser Location API.
+          location.
 
         </p>
 

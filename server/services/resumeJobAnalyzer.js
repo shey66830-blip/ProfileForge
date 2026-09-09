@@ -318,22 +318,29 @@ Please return JSON only.`;
   return normalizeQualitativeJSON(text);
 }
 
-// Runs the qualitative LLM pass safely: a thrown provider error or malformed/
-// empty model output must never 500 the endpoint. Tries once, and retries once
-// when the model returned no parseable JSON; returns null if both fail.
+// Runs the qualitative LLM pass safely: malformed/empty model output never
+// 500s the endpoint (one clean retry for that case). Thrown provider errors
+// (auth, payment gating, unknown model, network) are deterministic and never
+// improve on a retry — they are propagated immediately so the caller can show
+// the specific humanized reason instead of a generic message.
 export async function analyzeQualitativeWithRetry(args) {
+  let providerError = null;
   try {
     const first = await analyzeWithLLM(args);
     if (first) return first;
-  } catch {
-    // provider/network failure on the first attempt — one retry still worth it
+  } catch (err) {
+    providerError = err;
   }
-  try {
-    const second = await analyzeWithLLM(args);
-    return second || null;
-  } catch {
-    return null;
+  if (!providerError) {
+    // The model responded but returned no parseable JSON — one clean retry.
+    try {
+      const second = await analyzeWithLLM(args);
+      return second || null;
+    } catch (err) {
+      providerError = err;
+    }
   }
+  throw providerError;
 }
 
 export function normalizeQualitativeJSON(raw) {

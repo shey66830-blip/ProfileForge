@@ -5,7 +5,9 @@
   "main": "server.js",
   "scripts": {
     "dev": "nodemon server.js",
-    "start": "node server.js"
+    "start": "node server.js",
+    "test": "node --test *.test.js",
+    "test:watch": "node --test --watch *.test.js"
   },
   "keywords": [],
   "author": "",

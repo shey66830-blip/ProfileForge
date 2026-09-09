@@ -18,11 +18,14 @@ import paymentRoutes from "./routes/paymentRoutes.js";
 import savedJobRoutes from "./routes/savedJobRoutes.js";
 import applicationRoutes from "./routes/applicationRoutes.js";
 import courseRoutes, { certRouter } from "./routes/courseRoutes.js";
+import profileRoutes from "./routes/profileRoutes.js";
+import exportRoutes from "./routes/exportRoutes.js";
+import tailoringRoutes from "./routes/tailoringRoutes.js";
 
 const app = express();
 
 app.use(passport.initialize());
-app.use(express.json());
+app.use(express.json({ limit: "1mb" }));
 app.use(cookieParser());
 
 
@@ -57,6 +60,9 @@ app.use("/api/saved-jobs", savedJobRoutes);
 app.use("/api/applications", applicationRoutes);
 app.use("/api/courses", courseRoutes);
 app.use("/api/certifications", certRouter);
+app.use("/api/profile", profileRoutes);
+app.use("/api/export", exportRoutes);
+app.use("/api/tailoring", tailoringRoutes);
 
 app.get("/api/health", (req, res) => {
   res.json({ status: "ok", uptime: process.uptime() });
@@ -71,6 +77,20 @@ app.use(errorHandler);
 const PORT = parseInt(process.env.PORT, 10) || 5000;
 
 connectDB();
+
+// Production startup checks — warn early about missing critical secrets
+if (isProduction) {
+  const required = ["JWT_SECRET", "MONGO_URI"];
+  const missing = required.filter((k) => !process.env[k]);
+  if (missing.length) {
+    console.error(`FATAL: Missing required env var(s) in production: ${missing.join(", ")}`);
+    process.exit(1);
+  }
+  if ((process.env.JWT_SECRET || "").length < 32) {
+    console.error("FATAL: JWT_SECRET must be at least 32 characters in production.");
+    process.exit(1);
+  }
+}
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);

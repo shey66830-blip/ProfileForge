@@ -13,6 +13,7 @@ import recommendationEngine from "./recommendationEngine.js";
 import salaryPredictor from "./salaryPredictor.js";
 import careerAdvisor from "./careerAdvice.js";
 import locationMatcher from "./locationMatcher.js";
+import { resolveCountry, adzunaCode } from "./countryDirectory.js";
 
 import {
     cleanResumeText,
@@ -24,9 +25,13 @@ import {
 // Configuration
 // =====================================================
 
-const MAX_RESULTS = 80;
+// Env-configurable; hard-capped for sanity.
+const MAX_RESULTS = Math.min(Math.max(parseInt(process.env.MAX_JOBS, 10) || 150, 20), 300);
 
-const DEFAULT_COUNTRY = "India";
+// Per-source fetch timeout so one slow provider cannot stall a search.
+const SOURCE_TIMEOUT_MS = 8000;
+
+const DEFAULT_COUNTRY = "Worldwide";
 
 const REMOTIVE_URL =
     "https://remotive.com/api/remote-jobs";
@@ -35,41 +40,14 @@ const ADZUNA_BASE =
     "https://api.adzuna.com/v1/api/jobs";
 
 const JSEARCH_URL = "https://jsearch.p.rapidapi.com/search";
-const ARBEITNOW_URL = "https://arbeitnow.p.rapidapi.com/api/job-board-api";
+// Arbeitnow's public API is free and keyless (250 jobs/page).
+const ARBEITNOW_URL = "https://www.arbeitnow.com/api/job-board-api";
 
-const COUNTRY_CODES = {
-
-    India: "in",
-
-    "United States": "us",
-
-    USA: "us",
-
-    Canada: "ca",
-
-    Australia: "au",
-
-    Germany: "de",
-
-    Singapore: "sg",
-
-    "United Kingdom": "gb"
-
-};
+// Country handling (worldwide + ~200 countries) lives in countryDirectory.js.
 
 // =====================================================
 // Helpers
 // =====================================================
-
-function getCountryCode(country = DEFAULT_COUNTRY) {
-
-    return (
-        COUNTRY_CODES[country] ||
-
-        COUNTRY_CODES[DEFAULT_COUNTRY]
-    );
-
-}
 
 function removeHtml(text = "") {
 
@@ -109,9 +87,26 @@ function uniqueJobs(jobs = []) {
 
     });
 
-}async function fetchJSON(url, headers = {}) {
+}
+
+// Keeps location-relevant jobs for country-specific searches. Remote jobs are
+// location-independent and always survive the filter; non-remote jobs must
+// mention the chosen country (name or ISO code) in their location/country.
+function filterByCountry(jobs = [], resolved) {
+    if (!resolved) return jobs;
+    const name = resolved.name.toLowerCase();
+    return jobs.filter(job => {
+        if (job.remote) return true;
+        const hay = `${job.location || ""} ${job.country || ""}`.toLowerCase();
+        if (name && hay.includes(name)) return true;
+        // ISO-code match only for real codes (empty code would match everything).
+        return Boolean(resolved.code) && hay.includes(resolved.code.toLowerCase());
+    });
+}
+
+async function fetchJSON(url, headers = {}, timeoutMs = SOURCE_TIMEOUT_MS) {
     try {
-        const response = await fetch(url, { headers });
+        const response = await fetch(url, { headers, signal: AbortSignal.timeout(timeoutMs) });
         if (!response.ok) return null;
         return await response.json();
     } catch (err) {
@@ -147,7 +142,7 @@ async function analyzeCandidateResume(resumeText = "") {
 
 async function fetchRemotiveJobs(search = "", category = "") {
 
-    const params = new URLSearchParams();
+    const params = new URLSearchParams({ limit: "50" });
 
     if (search)
         params.append("search", search);
@@ -171,6 +166,12 @@ async function fetchAdzunaJobs(search = "", country = DEFAULT_COUNTRY) {
     if (!appId || !appKey)
         return [];
 
+    // Worldwide searches skip Adzuna (it is per-country by design); countries
+    // outside its supported set are covered by JSearch instead.
+    const code = adzunaCode(resolveCountry(country));
+    if (!code)
+        return [];
+
     const params = new URLSearchParams({
 
         app_id: appId,
@@ -179,14 +180,14 @@ async function fetchAdzunaJobs(search = "", country = DEFAULT_COUNTRY) {
 
         what: search,
 
-        results_per_page: "40",
+        results_per_page: "50",
 
         "content-type": "application/json"
 
     });
 
     const url =
-`${ADZUNA_BASE}/${getCountryCode(country)}/search/1?${params.toString()}`;
+`${ADZUNA_BASE}/${code}/search/1?${params.toString()}`;
 
     const data = await fetchJSON(url);
 
@@ -243,7 +244,7 @@ function normalizeRemotiveJob(job) {
             job.url,
 
         publishedAt:
-            job.publication_date,
+            normalizePublishedAt(job.publication_date),
 
         remote: true
 
@@ -315,7 +316,7 @@ function normalizeAdzunaJob(job) {
             job.redirect_url,
 
         publishedAt:
-            job.created,
+            normalizePublishedAt(job.created),
 
         remote: false
 
@@ -328,8 +329,12 @@ async function fetchJSearchJobs(search = "", country = "") {
     const apiKey = process.env.JSEARCH_API_KEY;
     if (!apiKey) return [];
 
-    const query = country ? `${search} in ${country}` : search;
-    const params = new URLSearchParams({ query, page: "1", num_pages: "1" });
+    // Worldwide → plain keyword query; specific country → natural-language
+    // location ("react in Japan") which JSearch resolves to cities/regions.
+    const resolved = resolveCountry(country);
+    const query = resolved ? `${search} in ${resolved.name}` : search;
+    const numPages = Math.min(Math.max(parseInt(process.env.JOBSEARCH_PAGES, 10) || 2, 1), 5);
+    const params = new URLSearchParams({ query, page: "1", num_pages: String(numPages) });
     const headers = {
         "X-RapidAPI-Key": apiKey,
         "X-RapidAPI-Host": "jsearch.p.rapidapi.com",
@@ -342,16 +347,9 @@ async function fetchJSearchJobs(search = "", country = "") {
 // Arbeitnow Fetcher
 // =====================================================
 async function fetchArbeitnowJobs(search = "") {
-    const apiKey = process.env.ARBEITNOW_API_KEY;
-    if (!apiKey) return [];
-
     const params = new URLSearchParams();
     if (search) params.append("search", search);
-    const headers = {
-        "X-RapidAPI-Key": apiKey,
-        "X-RapidAPI-Host": "arbeitnow.p.rapidapi.com",
-    };
-    const data = await fetchJSON(`${ARBEITNOW_URL}?${params}`, headers);
+    const data = await fetchJSON(`${ARBEITNOW_URL}?${params.toString()}`);
     return data?.data || [];
 }
 
@@ -384,21 +382,159 @@ function normalizeJSearchJob(job) {
 // Arbeitnow Normalizer
 // =====================================================
 function normalizeArbeitnowJob(job) {
-    const description = removeHtml(job.description || "");
+    // Their description HTML is entity-encoded ("&lt;p&gt;…") — decode first.
+    const rawDescription = (job.description || "")
+        .replace(/&lt;/g, "<")
+        .replace(/&gt;/g, ">")
+        .replace(/&quot;/g, "\"")
+        .replace(/&#39;/g, "'")
+        .replace(/&amp;/g, "&");
+    const description = removeHtml(rawDescription);
     return {
-        id: `arbeitnow-${job.id}`,
+        id: `arbeitnow-${job.slug || job.id}`,
         source: "Arbeitnow",
         title: job.title || "Unknown",
         company: job.company_name || "Unknown",
-        location: job.location || "Remote",
+        location: job.location || (job.remote ? "Remote" : "Not specified"),
         country: "",
-        category: "General",
-        type: job.remote ? "Remote" : "Full Time",
+        category: (job.tags || [])[0] || "General",
+        type: (job.job_types || []).join(", ") || (job.remote ? "Remote" : "Full Time"),
         salary: null,
         description,
         applyUrl: job.url || "",
-        publishedAt: job.created_at || "",
+        publishedAt: job.created_at ? new Date(job.created_at * 1000).toISOString() : "",
         remote: job.remote || false,
+    };
+}
+
+// =====================================================
+// Jobicy Fetcher (free, keyless — worldwide remote)
+// =====================================================
+async function fetchJobicyJobs(search = "") {
+    const params = new URLSearchParams({ count: "50" });
+    if (search) params.append("tag", search);
+    const data = await fetchJSON(`https://jobicy.com/api/v2/remote-jobs?${params.toString()}`);
+    return data?.jobs || [];
+}
+
+// =====================================================
+// Jobicy Normalizer
+// =====================================================
+function normalizeJobicyJob(job) {
+    const description = removeHtml(job.jobDescription || job.jobExcerpt || "");
+    return {
+        id: `jobicy-${job.id}`,
+        source: "Jobicy",
+        title: job.jobTitle || "Unknown",
+        company: job.companyName || "Unknown",
+        location: job.jobGeo || "Worldwide",
+        country: "",
+        category: job.industryName || "General",
+        type: job.jobLevel || "Remote",
+        salary: null,
+        description,
+        applyUrl: job.url || "",
+        publishedAt: normalizePublishedAt(job.pubDate || ""),
+        remote: true,
+    };
+}
+
+// =====================================================
+// Himalayas Fetcher (free, keyless — worldwide remote)
+// =====================================================
+async function fetchHimalayasJobs(search = "") {
+    const params = new URLSearchParams({ limit: "50" });
+    if (search) params.append("q", search);
+    const data = await fetchJSON(`https://himalayas.app/jobs/api?${params.toString()}`);
+    return data?.jobs || [];
+}
+
+// =====================================================
+// Himalayas Normalizer
+// =====================================================
+function normalizeHimalayasJob(job) {
+    const description = removeHtml(job.descriptionPlain || "");
+    const loc = Array.isArray(job.locationRestrictions) && job.locationRestrictions.length
+        ? job.locationRestrictions.join(", ")
+        : "Worldwide";
+    return {
+        id: `himalayas-${job.guid || job.id || Math.random().toString(36).slice(2)}`,
+        source: "Himalayas",
+        title: job.title || "Unknown",
+        company: job.companyName || job.company?.name || "Unknown",
+        location: loc,
+        country: "",
+        category: "General",
+        type: "Remote",
+        salary: null,
+        description,
+        applyUrl: job.applicationLink || job.guid || "",
+        publishedAt: normalizePublishedAt(job.pubDate),
+        remote: true,
+    };
+}
+
+// Normalizes epoch-seconds / epoch-millis timestamps (some sources, e.g.
+// Himalayas, return raw integers) into ISO strings. Leaves ISO strings as-is.
+function normalizePublishedAt(v) {
+    if (v === null || v === undefined || v === "") return "";
+    if (typeof v === "number" || /^\d+$/.test(String(v))) {
+        const n = Number(v);
+        // Epoch seconds are ~10 digits; millis are ~13. Anything that parses
+        // to a pre-2001 date under either interpretation is unusable — drop it.
+        const dSec = new Date(n < 1e12 ? n * 1000 : n);
+        if (!isNaN(dSec.getTime()) && dSec.getTime() > 978307200000) return dSec.toISOString();
+        return "";
+    }
+    const d = new Date(v);
+    return isNaN(d.getTime()) ? "" : d.toISOString();
+}
+
+// =====================================================
+// Jooble Fetcher (optional — set JOOBLE_API_KEY; covers 60+ countries)
+// =====================================================
+async function fetchJoobleJobs(search = "", resolved = null) {
+    const apiKey = process.env.JOOBLE_API_KEY;
+    if (!apiKey) return [];
+
+    try {
+        const response = await fetch(`https://jooble.org/api/${apiKey}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                keywords: search || "",
+                location: resolved?.name || "",
+                page: 1,
+            }),
+            signal: AbortSignal.timeout(SOURCE_TIMEOUT_MS),
+        });
+        if (!response.ok) return [];
+        const data = await response.json();
+        return data?.jobs || [];
+    } catch (err) {
+        return [];
+    }
+}
+
+// =====================================================
+// Jooble Normalizer
+// =====================================================
+function normalizeJoobleJob(job) {
+    const description = removeHtml(job.snippet || "");
+    return {
+        id: `jooble-${job.id || `${job.title}-${job.company}`.toLowerCase()}`,
+        source: "Jooble",
+        title: job.title || "Unknown",
+        company: job.company || "Unknown",
+        location: job.location || "Worldwide",
+        country: "",
+        category: "General",
+        type: job.type || "Full Time",
+        salary: null,
+        description,
+        applyUrl: job.link || "",
+        publishedAt: normalizePublishedAt(job.updated || ""),
+        remote: /remote/i.test(`${job.location || ""} ${job.title || ""}`),
     };
 }
 
@@ -408,26 +544,48 @@ function normalizeArbeitnowJob(job) {
 async function collectJobs({
     search,
     category,
-    country
+    country,
+    sources = []
 }) {
+    const resolved = resolveCountry(country);
+
+    // sources=[] means every source; a non-empty array is the allow-list the
+    // client's Source checkboxes map to (names must match the normalizers).
+    const want = (name) => sources.length === 0 || sources.includes(name);
+    const fetchAll = sources.length === 0;
+
     const [
         remotive,
         adzuna,
         jsearch,
-        arbeitnow
+        arbeitnow,
+        jobicy,
+        himalayas,
+        jooble
     ] = await Promise.all([
-        fetchRemotiveJobs(search, category),
-        fetchAdzunaJobs(search, country),
-        fetchJSearchJobs(search, country),
-        fetchArbeitnowJobs(search),
+        fetchAll || want("Remotive") ? fetchRemotiveJobs(search, category) : Promise.resolve([]),
+        fetchAll || want("Adzuna") ? fetchAdzunaJobs(search, country) : Promise.resolve([]),
+        fetchAll || want("JSearch") ? fetchJSearchJobs(search, country) : Promise.resolve([]),
+        fetchAll || want("Arbeitnow") ? fetchArbeitnowJobs(search) : Promise.resolve([]),
+        fetchAll || want("Jobicy") ? fetchJobicyJobs(search) : Promise.resolve([]),
+        fetchAll || want("Himalayas") ? fetchHimalayasJobs(search) : Promise.resolve([]),
+        fetchAll || want("Jooble") ? fetchJoobleJobs(search, resolved) : Promise.resolve([]),
     ]);
 
-    return uniqueJobs([
+    // Adzuna is queried per-country at the API level, so its results are
+    // inherently scoped to the chosen country and skip the post-filter.
+    const adzunaJobs = adzuna.map(normalizeAdzunaJob);
+
+    const scopedJobs = filterByCountry([
         ...remotive.map(normalizeRemotiveJob),
-        ...adzuna.map(normalizeAdzunaJob),
         ...jsearch.map(normalizeJSearchJob),
         ...arbeitnow.map(normalizeArbeitnowJob),
-    ]);
+        ...jobicy.map(normalizeJobicyJob),
+        ...himalayas.map(normalizeHimalayasJob),
+        ...jooble.map(normalizeJoobleJob),
+    ], resolved);
+
+    return uniqueJobs([...adzunaJobs, ...scopedJobs]);
 }
 // =====================================================
 // AI Job Enhancement
@@ -559,7 +717,9 @@ async function searchWithFallback({
 
     category = "",
 
-    country = DEFAULT_COUNTRY
+    country = DEFAULT_COUNTRY,
+
+    sources = []
 
 }) {
 
@@ -571,7 +731,9 @@ async function searchWithFallback({
 
         category,
 
-        country
+        country,
+
+        sources
 
     });
 
@@ -663,7 +825,9 @@ async function searchWithFallback({
 
         category,
 
-        country
+        country,
+
+        sources
 
     });
 
@@ -802,26 +966,21 @@ function buildSearchSummary({
 
                   ) / totalJobs
 
-              );
+              );    const perSource = {};
+    jobs.forEach(job => {
+        perSource[job.source] = (perSource[job.source] || 0) + 1;
+    });
 
     return {
-
         search,
-
         country,
-
         totalJobs,
-
         remoteJobs,
-
         companies: companies.size,
-
         averageMatch,
-
+        perSource,
         generatedAt:
-
             new Date().toISOString()
-
     };
 
 }
@@ -837,7 +996,9 @@ export async function searchRemoteJobs({
 
     country = DEFAULT_COUNTRY,
 
-    resumeText = ""
+    resumeText = "",
+
+    sources = []
 
 }) {
 
@@ -867,7 +1028,9 @@ export async function searchRemoteJobs({
 
                 category,
 
-                country
+                country,
+
+                sources
 
             });
 

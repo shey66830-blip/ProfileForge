@@ -1,4 +1,5 @@
 import { API_BASE } from "../config.js";
+import { DEFAULT_MODEL } from "../utils/aiModels.js";
 
 export async function analyzeResume(documentId) {
   try {
@@ -37,8 +38,8 @@ export async function editDocumentWithAI(documentId, instruction, provider, mode
       body: JSON.stringify({
         documentId,
         instruction,
-        provider: provider || "openai",
-        model: model || "gpt-4o-mini",
+        provider: provider || DEFAULT_MODEL.provider,
+        model: model || DEFAULT_MODEL.model,
       }),
     });
 
@@ -62,8 +63,8 @@ export async function analyzeResumeJob(resumeId, jobTitle, jobCompany, jobDescri
         jobTitle,
         jobCompany,
         jobDescription,
-        provider: provider || "openai",
-        model: model || "gpt-4o-mini",
+        provider: provider || DEFAULT_MODEL.provider,
+        model: model || DEFAULT_MODEL.model,
       }),
     });
 
@@ -84,10 +85,10 @@ export async function compareResumeJob(resumeId, jobTitle, jobCompany, jobDescri
         jobTitle,
         jobCompany,
         jobDescription,
-        providerA: providerA || "openai",
-        modelA: modelA || "openai/gpt-6-astra",
-        providerB: providerB || "openai",
-        modelB: modelB || "anthropic/claude-fable-5.1",
+        providerA: providerA || "experiential",
+        modelA: modelA || "claude-fable-5.1",
+        providerB: providerB || "experiential",
+        modelB: modelB || "gpt-6-astra",
       }),
     });
 

@@ -206,7 +206,7 @@ export const analyzeResumeJob = async (req, res) => {
           client,
           model: effectiveModel,
         } = getProviderClient(
-          typeof provider === "string" ? provider : "openrouter",
+          typeof provider === "string" ? provider : "experiential",
           typeof model === "string" ? model : ""
         );
         qualitativeModel = effectiveModel;
@@ -228,10 +228,10 @@ export const analyzeResumeJob = async (req, res) => {
       } catch (err) {
         const message = err.message || "";
         qualitativeError = /api.key/i.test(message)
-          ? message.includes("OPENROUTER_API_KEY")
-            ? "OpenRouter is not configured on the server (missing OPENROUTER_API_KEY)."
+          ? message.includes("EXPERIENTIAL_API_KEY") || message.includes("OPENROUTER_API_KEY")
+            ? "The AI gateway is not configured on the server (missing EXPERIENTIAL_API_KEY)."
             : "Invalid or missing API key for the selected AI provider."
-          : "AI analysis is temporarily unavailable. Please try again later.";
+          : humanizeProviderError(err);
       }
     }
 
@@ -305,14 +305,16 @@ export const compareResumeJob = async (req, res) => {
     jobProfile.requiredSkills = parsedReqs.requiredSkills;
     jobProfile.preferredSkills = parsedReqs.preferredSkills;
 
+    // Default pair leads with the working model (claude-fable-5.1); the
+    // other Experiential model is B so the two sides stay distinct.
     const configA = getProviderClient(
-      providerA || "openai",
-      modelA || "openai/gpt-6-astra"
+      providerA || "experiential",
+      modelA || "claude-fable-5.1"
     );
     const configB = providerB || modelB
       ? getProviderClient(
-          providerB || "openai",
-          modelB || "anthropic/claude-fable-5.1"
+          providerB || "experiential",
+          modelB || "gpt-6-astra"
         )
       : null;
 

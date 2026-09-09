@@ -8,7 +8,7 @@ const FEATURES=[
 {name:"Resume Builder",free:true,premium:true,pro:true},
 {name:"CV Builder",free:true,premium:true,pro:true},
 {name:"PDF Export",free:"5/day",premium:"Unlimited",pro:"Unlimited"},
-{name:"Job Search (4 sources)",free:true,premium:true,pro:true},
+{name:"Job Search (7 sources)",free:true,premium:true,pro:true},
 {name:"AI Resume Match",free:true,premium:true,pro:true},
 {name:"Saved Jobs",free:true,premium:true,pro:true},
 {name:"Application Tracker",free:true,premium:true,pro:true},

@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { AI_MODELS, modelValue, findModelByValue } from "../utils/aiModels.js";
+import React, { useState, useEffect } from "react";
+import { AI_MODELS, DEFAULT_MODEL, modelValue, findModelByValue } from "../utils/aiModels.js";
 import { editDocumentWithAI } from "../services/aiService.js";
 
 const presets = [
@@ -21,9 +21,19 @@ export default function AiEditor({
 }) {
   const [selectedId, setSelectedId] = useState(documents[0]?._id || "");
   const [instruction, setInstruction] = useState("");
-  const [selectedModel, setSelectedModel] = useState(modelValue(AI_MODELS[0]));
+  const [selectedModel, setSelectedModel] = useState(modelValue(DEFAULT_MODEL));
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  // Documents arrive async; without this, the select displays the first
+  // resume while state still holds "" and Apply refuses with a false
+  // "Please select a document."
+  useEffect(() => {
+    if (documents.length === 0) return;
+    if (!selectedId || !documents.some((d) => d._id === selectedId)) {
+      setSelectedId(documents[0]._id);
+    }
+  }, [documents]);
 
   const selectedDoc = documents.find((doc) => doc._id === selectedId);
   const selectedModelDef = findModelByValue(selectedModel);

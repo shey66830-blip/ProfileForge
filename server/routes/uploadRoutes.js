@@ -1,6 +1,7 @@
 import express from "express";
 import multer from "multer";
 import fs from "fs";
+import path from "path";
 import { PDFParse } from "pdf-parse";
 import mammoth from "mammoth";
 import { protect } from "../middleware/authMiddleware.js";
@@ -8,16 +9,25 @@ import { matchSkills, ALL_SKILLS as ALL_SKILLS_LOCAL } from "../services/skillDa
 
 const router = express.Router();
 
+const ALLOWED_EXTENSIONS = [".pdf", ".docx", ".txt"];
+const ALLOWED_MIMES = ["application/pdf", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "text/plain"];
+
 const upload = multer({
   dest: "uploads/",
   limits: {
     fileSize: 5 * 1024 * 1024,
   },
+  fileFilter: (_req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase();
+    if (!ALLOWED_EXTENSIONS.includes(ext)) {
+      return cb(new Error("Only PDF, DOCX, or TXT files are allowed."));
+    }
+    if (file.mimetype && !ALLOWED_MIMES.includes(file.mimetype) && file.mimetype !== "application/octet-stream") {
+      return cb(new Error("File type not allowed."));
+    }
+    cb(null, true);
+  },
 });
-
-function escapeRegExp(s) {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
 
 // Skill matching now lives in services/skillDatabase.js (single source of
 // truth shared with skillExtractor/aiResumeAnalyzer). matchSkills is
@@ -229,8 +239,6 @@ function cleanPdfText(text) {
 }
 
 export function extractFields(text) {
-  const lower = text.toLowerCase();
-
   // Email — broad match
   const email =
     text.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/)?.[0] || "";
@@ -325,35 +333,50 @@ export function extractFields(text) {
 }
 
 router.post("/resume", protect, upload.single("resume"), async (req, res) => {
+  const filePath = req.file?.path;
   try {
     if (!req.file) {
       return res.json({ ok: false, message: "No file uploaded." });
     }
 
-    const filePath = req.file.path;
     const originalName = req.file.originalname.toLowerCase();
+    const ext = path.extname(originalName);
+
+    // Validate file signature (magic bytes) for PDF and DOCX
+    const buffer = fs.readFileSync(filePath);
+    if (ext === ".pdf" && !buffer.slice(0, 4).toString().startsWith("%PDF")) {
+      fs.unlinkSync(filePath);
+      return res.json({ ok: false, message: "File does not appear to be a valid PDF." });
+    }
+    if (ext === ".docx") {
+      // DOCX is a ZIP archive — check for PK header
+      const header = buffer.slice(0, 4);
+      if (header[0] !== 0x50 || header[1] !== 0x4b) {
+        fs.unlinkSync(filePath);
+        return res.json({ ok: false, message: "File does not appear to be a valid DOCX." });
+      }
+    }
 
     let text = "";
 
-    if (originalName.endsWith(".pdf")) {
-      const buffer = fs.readFileSync(filePath);
+    if (ext === ".pdf") {
       const parser = new PDFParse({ data: buffer, verbosity: 0 });
       const parsed = await parser.getText();
       text = cleanPdfText(parsed.text || "");
-    } else if (originalName.endsWith(".docx")) {
+    } else if (ext === ".docx") {
       const result = await mammoth.extractRawText({ path: filePath });
       text = result.value;
-    } else if (originalName.endsWith(".txt")) {
-      text = fs.readFileSync(filePath, "utf-8");
+    } else if (ext === ".txt") {
+      text = buffer.toString("utf-8");
     } else {
-      fs.unlinkSync(filePath);
       return res.json({
         ok: false,
         message: "Only PDF, DOCX, or TXT files are allowed.",
       });
     }
 
-    fs.unlinkSync(filePath);
+    // Clean up uploaded file immediately
+    try { fs.unlinkSync(filePath); } catch {}
 
     res.json({
       ok: true,
@@ -361,6 +384,8 @@ router.post("/resume", protect, upload.single("resume"), async (req, res) => {
       fields: extractFields(text),
     });
   } catch (err) {
+    // Always clean up temp file on error
+    if (filePath) try { fs.unlinkSync(filePath); } catch {}
     res.json({ ok: false, message: err.message });
   }
 });

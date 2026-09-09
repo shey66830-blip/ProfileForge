@@ -1,25 +1,30 @@
-import React, { useEffect, useState, createContext } from "react";
+import React, { useEffect, useState, Suspense, lazy, createContext } from "react";
 import { BrowserRouter, Routes, Route, Navigate, useNavigate, useParams, useLocation } from "react-router-dom";
 
 import ParticleCanvas from "./components/ParticleCanvas.jsx";
 import ErrorBoundary from "./components/ErrorBoundary.jsx";
 import { ToastProvider } from "./context/ToastContext.jsx";
 import Navbar from "./components/Navbar.jsx";
-import Home from "./pages/home.jsx";
-import Dashboard from "./pages/dashboard.jsx";
-import Builder from "./pages/builder.jsx";
-import Output from "./pages/output.jsx";
-import JobSearch from "./pages/jobSearch.jsx";
-import Matchmaking from "./pages/matchmaking.jsx";
-import AiEditor from "./pages/aiEditor.jsx";
-import Auth from "./pages/auth.jsx";
-import Premium from "./pages/premium.jsx";
-import Profile from "./pages/profile.jsx";
-import SavedJobs from "./pages/savedJobs.jsx";
-import Applications from "./pages/applications.jsx";
-import Subscription from "./pages/subscription.jsx";
-import Courses from "./pages/courses.jsx";
-import ResumeJobAnalysis from "./pages/resumeJobAnalysis.jsx";
+
+// Route-level lazy loading — each page is a separate chunk
+const Home = lazy(() => import("./pages/home.jsx"));
+const Dashboard = lazy(() => import("./pages/dashboard.jsx"));
+const Builder = lazy(() => import("./pages/builder.jsx"));
+const Output = lazy(() => import("./pages/output.jsx"));
+const JobSearch = lazy(() => import("./pages/jobSearch.jsx"));
+const Matchmaking = lazy(() => import("./pages/matchmaking.jsx"));
+const AiEditor = lazy(() => import("./pages/aiEditor.jsx"));
+const Auth = lazy(() => import("./pages/auth.jsx"));
+const Premium = lazy(() => import("./pages/premium.jsx"));
+const Profile = lazy(() => import("./pages/profile.jsx"));
+const SavedJobs = lazy(() => import("./pages/savedJobs.jsx"));
+const Applications = lazy(() => import("./pages/applications.jsx"));
+const Subscription = lazy(() => import("./pages/subscription.jsx"));
+const Courses = lazy(() => import("./pages/courses.jsx"));
+const ResumeJobAnalysis = lazy(() => import("./pages/resumeJobAnalysis.jsx"));
+const ProfileBuilder = lazy(() => import("./pages/profileBuilder.jsx"));
+const Tailoring = lazy(() => import("./pages/tailoring.jsx"));
+const ExportATS = lazy(() => import("./pages/exportATS.jsx"));
 
 import { getCurrentUser, logoutUser } from "./services/authService.js";
 import { fetchDocuments } from "./services/documentService.js";
@@ -29,8 +34,11 @@ export const AppContext = createContext(null);
 
 function LoadingPlaceholder() {
   return (
-    <main className="container" style={{ minHeight: "50vh", display: "grid", placeItems: "center" }}>
-      <p className="muted">Loading…</p>
+    <main className="container" style={{ minHeight: "50vh", display: "grid", placeItems: "center" }} role="status" aria-label="Loading">
+      <div className="loading-spinner">
+        <div className="spinner" aria-hidden="true" />
+        <p>Loading…</p>
+      </div>
     </main>
   );
 }
@@ -107,10 +115,14 @@ function AppRoutes() {
 
   return (
     <>
+        <a href="#main-content" className="skip-link">Skip to main content</a>
+        <div className="aria-live-region" aria-live="polite" aria-atomic="true" id="aria-live" />
         <ParticleCanvas />
         <div className="app-shell">
       <Navbar setPage={setPage} openBuilder={openBuilder} user={ctx.user} logout={handleLogout} />
 
+      <main id="main-content" tabIndex="-1">
+      <Suspense fallback={<LoadingPlaceholder />}>
       <Routes>
         <Route path="/" element={<Home user={ctx.user} openBuilder={openBuilder} setPage={setPage} />} />
         <Route path="/auth" element={<GuestRoute user={ctx.user} authLoading={authLoading}><Auth setUser={ctx.setUser} /></GuestRoute>} />
@@ -178,6 +190,24 @@ function AppRoutes() {
           </ProtectedRoute>
         } />
 
+        <Route path="/profile-builder" element={
+          <ProtectedRoute user={ctx.user} authLoading={authLoading}>
+            <ProfileBuilder />
+          </ProtectedRoute>
+        } />
+
+        <Route path="/tailoring" element={
+          <ProtectedRoute user={ctx.user} authLoading={authLoading}>
+            <Tailoring />
+          </ProtectedRoute>
+        } />
+
+        <Route path="/export-ats" element={
+          <ProtectedRoute user={ctx.user} authLoading={authLoading}>
+            <ExportATS />
+          </ProtectedRoute>
+        } />
+
         <Route path="/saved-jobs" element={
           <ProtectedRoute user={ctx.user} authLoading={authLoading}>
             <SavedJobs setPage={setPage} />
@@ -209,6 +239,8 @@ function AppRoutes() {
 
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+      </Suspense>
+      </main>
     </div>
       </>
   );
