@@ -209,7 +209,8 @@ const profileSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// One profile per user
-profileSchema.index({ user: 1 }, { unique: true });
+// One profile per user — the `unique: true` on the `user` field above
+// already creates this index; adding schema.index() here would register
+// it twice (Mongoose duplicate-index warning).
 
 export default mongoose.model("Profile", profileSchema);
