@@ -10,6 +10,7 @@ const NAV_ITEMS = [
   { path: "/tailoring", label: "Tailor" },
   { path: "/ai-editor", label: "AI Edit" },
   { path: "/jobs", label: "Jobs" },
+  { path: "/reverse-board", label: "Reverse" },
   { path: "/saved-jobs", label: "Saved" },
   { path: "/applications", label: "Apps" },
   { path: "/resume-job-analysis", label: "Compare" },
@@ -19,7 +20,7 @@ const NAV_ITEMS = [
 
 const MOBILE_ICONS = {
   "/dashboard": "📊", "/builder/resume": "📄", "/builder/cv": "📋", "/profile-builder": "👤",
-  "/tailoring": "✂️", "/ai-editor": "🤖", "/jobs": "💼", "/saved-jobs": "♡",
+  "/tailoring": "✂️", "/ai-editor": "🤖",  "/jobs": "💼", "/reverse-board": "🔄", "/saved-jobs": "♡",
   "/applications": "📈", "/resume-job-analysis": "⚖️", "/export-ats": "📥", "/courses": "📚",
 };
 

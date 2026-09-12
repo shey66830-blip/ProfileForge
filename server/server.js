@@ -21,6 +21,7 @@ import courseRoutes, { certRouter } from "./routes/courseRoutes.js";
 import profileRoutes from "./routes/profileRoutes.js";
 import exportRoutes from "./routes/exportRoutes.js";
 import tailoringRoutes from "./routes/tailoringRoutes.js";
+import reverseBoardRoutes from "./routes/reverseBoardRoutes.js";
 
 const app = express();
 
@@ -63,6 +64,7 @@ app.use("/api/certifications", certRouter);
 app.use("/api/profile", profileRoutes);
 app.use("/api/export", exportRoutes);
 app.use("/api/tailoring", tailoringRoutes);
+app.use("/api/reverse", reverseBoardRoutes);
 
 app.get("/api/health", (req, res) => {
   res.json({ status: "ok", uptime: process.uptime() });

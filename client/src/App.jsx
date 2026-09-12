@@ -25,6 +25,7 @@ const ResumeJobAnalysis = lazy(() => import("./pages/resumeJobAnalysis.jsx"));
 const ProfileBuilder = lazy(() => import("./pages/profileBuilder.jsx"));
 const Tailoring = lazy(() => import("./pages/tailoring.jsx"));
 const ExportATS = lazy(() => import("./pages/exportATS.jsx"));
+const ReverseBoard = lazy(() => import("./pages/reverseBoard.jsx"));
 
 import { getCurrentUser, logoutUser } from "./services/authService.js";
 import { fetchDocuments } from "./services/documentService.js";
@@ -205,6 +206,12 @@ function AppRoutes() {
         <Route path="/export-ats" element={
           <ProtectedRoute user={ctx.user} authLoading={authLoading}>
             <ExportATS />
+          </ProtectedRoute>
+        } />
+
+        <Route path="/reverse-board" element={
+          <ProtectedRoute user={ctx.user} authLoading={authLoading}>
+            <ReverseBoard />
           </ProtectedRoute>
         } />
 
