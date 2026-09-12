@@ -264,10 +264,38 @@ const applicationUpdateSchema = z.object({
   }).optional(),
 });
 
+// ── Reverse job board schemas ─────────────────────────────────────
+
+const reversePostSchema = z.object({
+  headline: z.string().min(4, "Headline must be at least 4 characters").max(200),
+  why: z.string().max(5000).optional(),
+  skills: z.array(z.string().min(1).max(100)).max(40).optional(),
+  workMode: z.enum(["remote", "hybrid", "onsite", "any"]).optional(),
+  locations: z.array(z.string().min(1).max(200)).max(20).optional(),
+  openToRelocate: z.boolean().optional(),
+  employmentType: z.enum(["full_time", "part_time", "contract", "internship", "any"]).optional(),
+  expectedSalary: z.string().max(100).optional(),
+  availability: z.string().max(100).optional(),
+  portfolioUrl: z.string().url().max(500).optional().or(z.literal("")),
+  status: z.enum(["draft", "published", "paused", "closed"]).optional(),
+});
+
+const reverseInquirySchema = z.object({
+  postId: z.string().min(1, "Post ID is required"),
+  message: z.string().min(10, "Message must be at least 10 characters").max(2000),
+  company: z.string().max(200).optional(),
+  role: z.string().max(200).optional(),
+});
+
+const reverseInquiryActionSchema = z.object({
+  action: z.enum(["accept", "decline"]),
+});
+
 export {
   signupSchema, loginSchema, documentSchema,
   aiEditSchema, aiAnalysisSchema, aiCompareSchema,
   profileUpdateSchema, profileImportSchema, profileSuggestionActionSchema, profilePromoteSchema,
   tailoringRequestSchema, tailoringApplySchema,
   applicationCreateSchema, applicationUpdateSchema, APPLICATION_STATUSES,
+  reversePostSchema, reverseInquirySchema, reverseInquiryActionSchema,
 };

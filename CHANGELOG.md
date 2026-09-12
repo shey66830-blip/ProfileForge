@@ -4,6 +4,30 @@ All notable changes to ProfileForge are documented here.
 
 Format based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [Unreleased] — Reverse Job Board (2026-09-12)
+
+### New Feature
+- **Reverse job board** (`/reverse-board`): workers post "here's exactly what I want to work on and why" and companies (other users) apply to hire them — flipping the normal job-board dynamic.
+
+**Server**
+- `server/models/ReversePost.js` — one post per user (unique index), headline/why/skills, work mode, employment type, locations, salary, availability, portfolio; lifecycle `draft → published → paused → closed`; denormalized `inquiryCount` for board sorting; `toPublicPost()` whitelist that never leaks the owner's account email.
+- `server/models/ReverseInquiry.js` — hiring-side application to a worker; unique index on `(post, fromUser)` (no spam); status `new → accepted | declined`; `toOwnerView()` hides the inquirer's email until accepted.
+- `server/controllers/reverseBoardController.js` + `server/routes/reverseBoardRoutes.js` — endpoints mounted at `/api/reverse`: `GET/PUT /me`, `POST /me/status/:status`, `GET /board` (skill/work-mode/employment-type filters; case-insensitive skill match with regex escaping), `POST /inquiries`, `GET /inquiries/received|sent`, `POST /inquiries/:id/respond` (accept reveals contact email; decline; single response enforced).
+- Zod schemas `reversePostSchema`, `reverseInquirySchema`, `reverseInquiryActionSchema` in `server/middleware/validate.js`; all routes behind `protect`.
+
+**Client**
+- `client/src/pages/reverseBoard.jsx` — 4-tab page: Browse talent (card grid + skill/work-mode filters + apply-to-hire modal), My post (editor with publish/pause/close/unpublish), Inquiries inbox (accept reveals contact), Sent.
+- `client/src/services/reverseBoardApi.js` — API service.
+- Route `/reverse-board` (lazy) in `App.jsx`; navbar entry "🔄 Reverse".
+
+**Privacy rules enforced**
+- Board/public views never include the owner's user document or account email.
+- Inquirer email is only revealed to the worker after the worker accepts; worker email never returned by any endpoint (inquirer replies via the accepted contact the worker chooses to share).
+
+### Tests
+- `server/reverseBoard.test.js` — 32 tests: schema shape, enums, unique indexes, skill setter dedup/cap, public-view sanitization (no email/password/`user` leak), validation schemas.
+- Full suite: 257 server tests, 9 client tests, all green.
+
 ## [Unreleased] — Milestone 7 Accessibility & Performance (2026-09-09)
 
 ### Accessibility Improvements
