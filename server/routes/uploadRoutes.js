@@ -2,7 +2,6 @@ import express from "express";
 import multer from "multer";
 import fs from "fs";
 import path from "path";
-import { PDFParse } from "pdf-parse";
 import mammoth from "mammoth";
 import { protect } from "../middleware/authMiddleware.js";
 import {
@@ -10,6 +9,20 @@ import {
   ALL_SKILLS as ALL_SKILLS_LOCAL,
   SKILL_DATABASE,
 } from "../services/skillDatabase.js";
+
+// PDF parsing is loaded lazily so running the server's unit tests (`npm test`)
+// never pulls the pdfjs runtime into the process before a PDF is actually needed.
+// The test runner evaluates file top-level import statements before any test,
+// and pdfjs-dist's legacy build has runtime web-api deps (DOMMatrix etc.) that
+// throw in Node's test execution model even when the import is never consumed.
+let createPDFParser;
+async function getPDFParser() {
+  if (!createPDFParser) {
+    const { PDFParse } = await import("pdf-parse");
+    createPDFParser = (opts) => new PDFParse(opts);
+  }
+  return createPDFParser;
+}
 
 const router = express.Router();
 
@@ -609,7 +622,8 @@ router.post("/resume", protect, upload.single("resume"), async (req, res) => {
     let text = "";
 
     if (ext === ".pdf") {
-      const parser = new PDFParse({ data: buffer, verbosity: 0 });
+      const Parser = await getPDFParser();
+      const parser = Parser({ data: buffer, verbosity: 0 });
       const parsed = await parser.getText();
       text = cleanPdfText(parsed.text || "");
     } else if (ext === ".docx") {
