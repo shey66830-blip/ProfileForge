@@ -6,7 +6,6 @@
 import { normalizeText } from "../utils/textCleaner.js";
 
 const DEGREES = [
-
   "b.tech",
   "btech",
   "be",
@@ -53,12 +52,10 @@ const DEGREES = [
 
   "diploma",
 
-  "iti"
-
+  "iti",
 ];
 
 const BRANCHES = [
-
   "computer science",
   "information technology",
   "electronics",
@@ -86,135 +83,103 @@ const BRANCHES = [
   "mathematics",
   "physics",
   "chemistry",
-  "biology"
-
+  "biology",
 ];
 
-function extractDegrees(text){
+function extractDegrees(text) {
+  const lower = normalizeText(text);
 
-    const lower=normalizeText(text);
-
-    return DEGREES.filter(degree=>
-        lower.includes(normalizeText(degree))
-    );
-
+  return DEGREES.filter((degree) => lower.includes(normalizeText(degree)));
 }
 
-function extractBranches(text){
+function extractBranches(text) {
+  const lower = normalizeText(text);
 
-    const lower=normalizeText(text);
-
-    return BRANCHES.filter(branch=>
-        lower.includes(normalizeText(branch))
-    );
-
+  return BRANCHES.filter((branch) => lower.includes(normalizeText(branch)));
 }
 
-function extractCGPA(text){
+function extractCGPA(text) {
+  const match = text.match(/([0-9]\.[0-9]{1,2})\s*\/\s*10/i);
 
-    const match=text.match(/([0-9]\.[0-9]{1,2})\s*\/\s*10/i);
+  if (match) return match[1] + "/10";
 
-    if(match) return match[1]+"/10";
-
-    return null;
-
+  return null;
 }
 
-function extractPercentage(text){
+function extractPercentage(text) {
+  const match = text.match(/([0-9]{2,3}(\.[0-9]+)?)\s*%/);
 
-    const match=text.match(/([0-9]{2,3}(\.[0-9]+)?)\s*%/);
+  if (match) return match[1] + "%";
 
-    if(match) return match[1]+"%";
-
-    return null;
-
+  return null;
 }
 
-function extractPassingYears(text){
-
-    return [...new Set(
-
-        text.match(/\b(19|20)\d{2}\b/g) || []
-
-    )];
-
+function extractPassingYears(text) {
+  return [...new Set(text.match(/\b(19|20)\d{2}\b/g) || [])];
 }
 
-function extractInstitutes(text){
+function extractInstitutes(text) {
+  const regex = /([A-Z][A-Za-z&().,' -]{5,}(University|Institute|College|School))/g;
 
-    const regex=/([A-Z][A-Za-z&().,' -]{5,}(University|Institute|College|School))/g;
+  const matches = text.match(regex);
 
-    const matches=text.match(regex);
-
-    return matches || [];
-
+  return matches || [];
 }
 
-function highestQualification(degrees){
+function highestQualification(degrees) {
+  const priority = [
+    "doctorate",
+    "phd",
 
-    const priority=[
+    "m.tech",
+    "mtech",
+    "mba",
+    "mca",
+    "msc",
+    "m.sc",
+    "m.pharm",
 
-        "doctorate",
-        "phd",
+    "b.tech",
+    "btech",
+    "be",
+    "b.e",
+    "mbbs",
+    "bca",
+    "bsc",
+    "b.sc",
+    "b.pharm",
+    "llb",
 
-        "m.tech",
-        "mtech",
-        "mba",
-        "mca",
-        "msc",
-        "m.sc",
-        "m.pharm",
+    "diploma",
 
-        "b.tech",
-        "btech",
-        "be",
-        "b.e",
-        "mbbs",
-        "bca",
-        "bsc",
-        "b.sc",
-        "b.pharm",
-        "llb",
+    "iti",
+  ];
 
-        "diploma",
+  for (const degree of priority) {
+    if (degrees.includes(degree)) return degree;
+  }
 
-        "iti"
-
-    ];
-
-    for(const degree of priority){
-
-        if(degrees.includes(degree))
-            return degree;
-
-    }
-
-    return null;
-
+  return null;
 }
 
-export default function analyzeEducation(text=""){
+export default function analyzeEducation(text = "") {
+  const degrees = extractDegrees(text);
 
-    const degrees=extractDegrees(text);
+  const branches = extractBranches(text);
 
-    const branches=extractBranches(text);
+  return {
+    degrees,
 
-    return{
+    branches,
 
-        degrees,
+    highestQualification: highestQualification(degrees),
 
-        branches,
+    institutes: extractInstitutes(text),
 
-        highestQualification:highestQualification(degrees),
+    cgpa: extractCGPA(text),
 
-        institutes:extractInstitutes(text),
+    percentage: extractPercentage(text),
 
-        cgpa:extractCGPA(text),
-
-        percentage:extractPercentage(text),
-
-        passingYears:extractPassingYears(text)
-
-    };
-
+    passingYears: extractPassingYears(text),
+  };
 }

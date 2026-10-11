@@ -20,7 +20,8 @@ function makeJob(overrides = {}) {
     source: overrides.source || "Remotive",
     sourceJobId: id,
     id: `${(overrides.source || "remotive").toLowerCase()}-${id}`,
-    canonicalUrl: "canonicalUrl" in overrides ? overrides.canonicalUrl : `https://example.com/job/${id}`,
+    canonicalUrl:
+      "canonicalUrl" in overrides ? overrides.canonicalUrl : `https://example.com/job/${id}`,
     title: "Senior Developer",
     company: "Acme Corp",
     description: "Build things",
@@ -54,7 +55,11 @@ describe("deduplicateJobs", () => {
 
   it("removes cross-source duplicates by URL", () => {
     const jobs = [
-      makeJob({ source: "Remotive", sourceJobId: "1", canonicalUrl: "https://example.com/job/abc" }),
+      makeJob({
+        source: "Remotive",
+        sourceJobId: "1",
+        canonicalUrl: "https://example.com/job/abc",
+      }),
       makeJob({ source: "Adzuna", sourceJobId: "2", canonicalUrl: "https://example.com/job/ABC" }),
     ];
     const result = deduplicateJobs(jobs);
@@ -63,8 +68,20 @@ describe("deduplicateJobs", () => {
 
   it("removes cross-source duplicates by title+company", () => {
     const jobs = [
-      makeJob({ source: "Remotive", sourceJobId: "1", title: "React Developer", company: "Acme Corp", canonicalUrl: "" }),
-      makeJob({ source: "Adzuna", sourceJobId: "2", title: "React Developer", company: "Acme Corp", canonicalUrl: "" }),
+      makeJob({
+        source: "Remotive",
+        sourceJobId: "1",
+        title: "React Developer",
+        company: "Acme Corp",
+        canonicalUrl: "",
+      }),
+      makeJob({
+        source: "Adzuna",
+        sourceJobId: "2",
+        title: "React Developer",
+        company: "Acme Corp",
+        canonicalUrl: "",
+      }),
     ];
     const result = deduplicateJobs(jobs);
     assert.equal(result.length, 1);
@@ -162,7 +179,10 @@ describe("normalizeUrl", () => {
   });
 
   it("strips query params and hash", () => {
-    assert.equal(normalizeUrl("https://example.com/job/123?ref=home#top"), "https://example.com/job/123");
+    assert.equal(
+      normalizeUrl("https://example.com/job/123?ref=home#top"),
+      "https://example.com/job/123",
+    );
   });
 
   it("handles empty string", () => {
@@ -178,11 +198,46 @@ describe("normalizeUrl", () => {
 
 describe("filterAndPaginate", () => {
   const jobs = [
-    makeJob({ source: "Remotive", sourceJobId: "1", title: "Frontend Dev", workMode: "remote", category: "Engineering", publishedAt: "2025-01-01T00:00:00.000Z" }),
-    makeJob({ source: "Adzuna", sourceJobId: "2", title: "Backend Dev", workMode: "onsite", category: "Engineering", publishedAt: "2025-01-02T00:00:00.000Z" }),
-    makeJob({ source: "Jobicy", sourceJobId: "3", title: "Designer", workMode: "remote", category: "Design", publishedAt: "2025-01-03T00:00:00.000Z" }),
-    makeJob({ source: "Remotive", sourceJobId: "4", title: "DevOps Engineer", workMode: "remote", category: "Engineering", publishedAt: "2025-01-04T00:00:00.000Z" }),
-    makeJob({ source: "Adzuna", sourceJobId: "5", title: "PM", workMode: "hybrid", category: "Product", publishedAt: "2025-01-05T00:00:00.000Z" }),
+    makeJob({
+      source: "Remotive",
+      sourceJobId: "1",
+      title: "Frontend Dev",
+      workMode: "remote",
+      category: "Engineering",
+      publishedAt: "2025-01-01T00:00:00.000Z",
+    }),
+    makeJob({
+      source: "Adzuna",
+      sourceJobId: "2",
+      title: "Backend Dev",
+      workMode: "onsite",
+      category: "Engineering",
+      publishedAt: "2025-01-02T00:00:00.000Z",
+    }),
+    makeJob({
+      source: "Jobicy",
+      sourceJobId: "3",
+      title: "Designer",
+      workMode: "remote",
+      category: "Design",
+      publishedAt: "2025-01-03T00:00:00.000Z",
+    }),
+    makeJob({
+      source: "Remotive",
+      sourceJobId: "4",
+      title: "DevOps Engineer",
+      workMode: "remote",
+      category: "Engineering",
+      publishedAt: "2025-01-04T00:00:00.000Z",
+    }),
+    makeJob({
+      source: "Adzuna",
+      sourceJobId: "5",
+      title: "PM",
+      workMode: "hybrid",
+      category: "Product",
+      publishedAt: "2025-01-05T00:00:00.000Z",
+    }),
   ];
 
   it("returns all jobs with no filters", () => {
@@ -237,13 +292,21 @@ describe("filterAndPaginate", () => {
   });
 
   it("excludes stale jobs by default", () => {
-    const staleJob = makeJob({ source: "X", sourceJobId: "99", expiresAt: "2020-01-01T00:00:00.000Z" });
+    const staleJob = makeJob({
+      source: "X",
+      sourceJobId: "99",
+      expiresAt: "2020-01-01T00:00:00.000Z",
+    });
     const result = filterAndPaginate([...jobs, staleJob]);
     assert.equal(result.total, 5); // stale job excluded
   });
 
   it("includes stale jobs when requested", () => {
-    const staleJob = makeJob({ source: "X", sourceJobId: "99", expiresAt: "2020-01-01T00:00:00.000Z" });
+    const staleJob = makeJob({
+      source: "X",
+      sourceJobId: "99",
+      expiresAt: "2020-01-01T00:00:00.000Z",
+    });
     const result = filterAndPaginate([...jobs, staleJob], { includeStale: true });
     assert.equal(result.total, 6);
   });

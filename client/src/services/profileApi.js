@@ -22,8 +22,7 @@ export const updateProfile = (data) =>
 export const importProfile = (data) =>
   api("/profile/import", { method: "POST", body: JSON.stringify(data) });
 
-export const promoteProfile = () =>
-  api("/profile/promote", { method: "POST" });
+export const promoteProfile = () => api("/profile/promote", { method: "POST" });
 
 export const applyProfileSuggestion = (suggestionId, accept) =>
   api("/profile/suggestions/apply", {
@@ -41,8 +40,7 @@ export const suggestTailoring = (data) =>
 export const applyTailoring = (data) =>
   api("/tailoring/apply", { method: "POST", body: JSON.stringify(data) });
 
-export const getTailoringVersions = (documentId) =>
-  api(`/tailoring/versions/${documentId}`);
+export const getTailoringVersions = (documentId) => api(`/tailoring/versions/${documentId}`);
 
 // ── Export ────────────────────────────────────────────────────────
 export const validateATS = (data) =>

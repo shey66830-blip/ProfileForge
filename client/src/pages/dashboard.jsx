@@ -44,10 +44,7 @@ export default function Dashboard({
         <div>
           <p className="eyebrow">My workspace</p>
           <h1>Dashboard</h1>
-          <p>
-            Manage your Career Mode and Personal Mode tools from one clean
-            workspace.
-          </p>
+          <p>Manage your Career Mode and Personal Mode tools from one clean workspace.</p>
         </div>
 
         <div className="row">
@@ -77,7 +74,9 @@ export default function Dashboard({
           </button>
 
           <button
-            className={activeTab === "biodata" ? "mode-tab active premium-tab" : "mode-tab premium-tab"}
+            className={
+              activeTab === "biodata" ? "mode-tab active premium-tab" : "mode-tab premium-tab"
+            }
             onClick={() => setActiveTab("biodata")}
           >
             Biodata 🔒
@@ -141,9 +140,7 @@ export default function Dashboard({
         {documents.length === 0 ? (
           <EmptyState openBuilder={openBuilder} />
         ) : filteredDocs.length === 0 ? (
-          <p className="muted">
-            No saved {activeTab} yet. Create one using the button above.
-          </p>
+          <p className="muted">No saved {activeTab} yet. Create one using the button above.</p>
         ) : (
           <div className="grid two">
             {filteredDocs.map((doc) => (

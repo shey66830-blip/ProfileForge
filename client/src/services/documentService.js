@@ -11,9 +11,7 @@ export async function fetchDocuments() {
 
 export async function saveDocumentToBackend(document) {
   const method = document._id ? "PUT" : "POST";
-  const url = document._id
-    ? `${API_BASE}/documents/${document._id}`
-    : `${API_BASE}/documents`;
+  const url = document._id ? `${API_BASE}/documents/${document._id}` : `${API_BASE}/documents`;
 
   const res = await fetch(url, {
     method,

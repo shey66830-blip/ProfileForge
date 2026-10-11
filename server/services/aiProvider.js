@@ -15,16 +15,14 @@ const DEFAULT_MODEL = "claude-fable-5.1";
 const PROVIDER_MODELS = {
   openai: {
     default: OPENAI_FALLBACK_MODEL,
-    allowed: [
-      OPENAI_BASE_MODEL,
-    ],
+    allowed: [OPENAI_BASE_MODEL],
   },
   experiential: {
     default: DEFAULT_MODEL,
-    allowed: [
-      "gpt-6-astra",
-      DEFAULT_MODEL,
-    ],
+    allowed: ["gpt-6-astra", DEFAULT_MODEL],
+    // Early-access models — verified available on the provider, but
+    // selectable by Pro subscribers only (the Early Access perk).
+    earlyAccess: ["deepseek-v4-flash", "deepseek-v4.1-flash", "gpt-5.6-luna", "qwen3.8-27b"],
   },
 };
 
@@ -42,7 +40,7 @@ function getProviderClient(provider = DEFAULT_PROVIDER, model = DEFAULT_MODEL) {
     const apiKey = process.env.EXPERIENTIAL_API_KEY || process.env.OPENROUTER_API_KEY;
     if (!apiKey) {
       throw new Error(
-        "EXPERIENTIAL_API_KEY is not set server-side. Experiential Labs calls are not available."
+        "EXPERIENTIAL_API_KEY is not set server-side. Experiential Labs calls are not available.",
       );
     }
     return {
@@ -57,9 +55,7 @@ function getProviderClient(provider = DEFAULT_PROVIDER, model = DEFAULT_MODEL) {
 
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
-    throw new Error(
-      "OPENAI_API_KEY is not set server-side. OpenAI calls are not available."
-    );
+    throw new Error("OPENAI_API_KEY is not set server-side. OpenAI calls are not available.");
   }
 
   return {
@@ -69,29 +65,34 @@ function getProviderClient(provider = DEFAULT_PROVIDER, model = DEFAULT_MODEL) {
   };
 }
 
-export function resolveChatConfig(reqBody = {}) {
-  const requestedProvider = typeof reqBody.provider === "string" ? reqBody.provider.trim().toLowerCase() : "";
+export function resolveChatConfig(reqBody = {}, user = null) {
+  const requestedProvider =
+    typeof reqBody.provider === "string" ? reqBody.provider.trim().toLowerCase() : "";
   const requestedModel = typeof reqBody.model === "string" ? reqBody.model.trim() : "";
 
   // Honor any explicitly supported provider (including legacy openai);
   // only unknown/missing values fall back to the app default.
-  const provider =
-    SUPPORTED_PROVIDERS.includes(requestedProvider)
-      ? requestedProvider
-      : DEFAULT_PROVIDER;
+  const provider = SUPPORTED_PROVIDERS.includes(requestedProvider)
+    ? requestedProvider
+    : DEFAULT_PROVIDER;
 
   const modelConfig = PROVIDER_MODELS[provider];
   const defaultModel = modelConfig.default;
-  const allowedModels = modelConfig.allowed;
+  const allAllowed = [...modelConfig.allowed, ...(modelConfig.earlyAccess || [])];
 
-  let model = requestedModel && allowedModels.includes(requestedModel)
-    ? requestedModel
-    : defaultModel;
+  let model = requestedModel && allAllowed.includes(requestedModel) ? requestedModel : defaultModel;
 
-  return { provider, model };
+  // Early-access models are a Pro perk: any lower plan silently falls back
+  // to the provider default rather than erroring mid-request.
+  if (requestedModel && (modelConfig.earlyAccess || []).includes(requestedModel)) {
+    const plan = user?.plan || "free";
+    if (plan !== "pro") model = defaultModel;
+  }
+
+  return { provider, model, earlyAccessUsed: (modelConfig.earlyAccess || []).includes(model) };
 }
 
-export async function chatCompletion({ provider, client, model, messages, temperature, maxTokens, stream }) {
+export async function chatCompletion({ client, model, messages, temperature, maxTokens }) {
   const params = {
     model,
     temperature: temperature ?? 0.7,

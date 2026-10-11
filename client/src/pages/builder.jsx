@@ -8,6 +8,9 @@ const blankForm = {
   email: "",
   phone: "",
   location: "",
+  linkedin: "",
+  github: "",
+  portfolio: "",
   education: "",
   skills: "",
   experience: "",
@@ -32,6 +35,8 @@ export default function Builder({
   const [uploading, setUploading] = useState(false);
   const [improvements, setImprovements] = useState([]);
   const [templateSuggestions, setTemplateSuggestions] = useState([]);
+  const [auditResult, setAuditResult] = useState(null);
+  const [categorizedSkills, setCategorizedSkills] = useState(null);
 
   const update = (field, value) => {
     setForm({ ...form, [field]: value });
@@ -55,19 +60,29 @@ export default function Builder({
     }
 
     // Fill every field the extractor found — name, contact, education, skills,
-    // experience, projects, certifications, personal details — in original
+    // experience, projects, certifications, personal details, links — in original
     // document order so nothing from the uploaded resume is lost.
+    // Only `skillsByCategory`, `links`, and `audit` are consumed below; the
+    // remaining extractor keys are intentionally not carried into the form.
     const {
       improvements: tips,
       suggestedTemplates: templates,
-      skillsList,
-      experienceCompanies,
+      skillsByCategory,
+      links,
+      audit,
       ...formFields
     } = result.fields;
 
-    setForm({ ...form, ...formFields });
+    const merged = { ...form, ...formFields };
+    if (links?.linkedin && !merged.linkedin) merged.linkedin = links.linkedin;
+    if (links?.github && !merged.github) merged.github = links.github;
+    if (links?.portfolio && !merged.portfolio) merged.portfolio = links.portfolio;
+
+    setForm(merged);
     setImprovements(tips || []);
     setTemplateSuggestions(templates || []);
+    setAuditResult(audit || null);
+    setCategorizedSkills(skillsByCategory || null);
     setError("");
   };
 
@@ -127,8 +142,8 @@ export default function Builder({
           <p className="eyebrow">Smart document builder</p>
           <h1>Create {type.toUpperCase()}</h1>
           <p>
-            Upload an old resume/CV or fill details manually. Your document will
-            be saved to your workspace.
+            Upload an old resume/CV or fill details manually. Your document will be saved to your
+            workspace.
           </p>
         </div>
 
@@ -147,11 +162,7 @@ export default function Builder({
             </div>
 
             <label className="upload-box">
-              <input
-                type="file"
-                accept=".pdf,.docx,.txt"
-                onChange={handleUpload}
-              />
+              <input type="file" accept=".pdf,.docx,.txt" onChange={handleUpload} />
               <span>{uploading ? "Parsing file..." : "Click to upload file"}</span>
               <small>PDF, DOCX, TXT up to 5MB</small>
             </label>
@@ -166,6 +177,50 @@ export default function Builder({
                     <li key={i}>{tip}</li>
                   ))}
                 </ul>
+              </div>
+            )}
+
+            {auditResult && (
+              <div className="upload-improvements" style={{ marginTop: 14 }}>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    marginBottom: 6,
+                  }}
+                >
+                  <p className="eyebrow" style={{ margin: 0 }}>
+                    Resume Quality Score
+                  </p>
+                  <span
+                    className="badge"
+                    style={{
+                      background:
+                        auditResult.score >= 80 ? "rgba(34,197,94,0.18)" : "rgba(234,179,8,0.18)",
+                      color: auditResult.score >= 80 ? "#22c55e" : "#eab308",
+                      fontWeight: 700,
+                    }}
+                  >
+                    {auditResult.score}% Complete
+                  </span>
+                </div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 8 }}>
+                  {auditResult.checklist?.map((item, idx) => (
+                    <span
+                      key={idx}
+                      style={{
+                        fontSize: 11,
+                        padding: "2px 8px",
+                        borderRadius: 12,
+                        background: item.complete ? "rgba(34,197,94,0.1)" : "rgba(239,68,68,0.1)",
+                        color: item.complete ? "#22c55e" : "#ef4444",
+                      }}
+                    >
+                      {item.complete ? "✓" : "✗"} {item.label}
+                    </span>
+                  ))}
+                </div>
               </div>
             )}
 
@@ -246,6 +301,18 @@ export default function Builder({
                 value={form.location}
                 onChange={(e) => update("location", e.target.value)}
               />
+
+              <input
+                placeholder="LinkedIn Profile URL"
+                value={form.linkedin || ""}
+                onChange={(e) => update("linkedin", e.target.value)}
+              />
+
+              <input
+                placeholder="GitHub / Portfolio URL"
+                value={form.github || ""}
+                onChange={(e) => update("github", e.target.value)}
+              />
             </div>
           </section>
 
@@ -264,6 +331,29 @@ export default function Builder({
               value={form.skills}
               onChange={(e) => update("skills", e.target.value)}
             />
+
+            {categorizedSkills && (
+              <div style={{ marginTop: 10 }}>
+                <p className="eyebrow" style={{ marginBottom: 6 }}>
+                  Identified Skill Domains
+                </p>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                  {Object.entries(categorizedSkills).map(
+                    ([cat, list]) =>
+                      list.length > 0 && (
+                        <span
+                          key={cat}
+                          className="badge"
+                          style={{ textTransform: "capitalize", fontSize: 11 }}
+                        >
+                          <strong>{cat.replace(/([A-Z])/g, " $1")}:</strong>{" "}
+                          {list.slice(0, 4).join(", ")}
+                        </span>
+                      ),
+                  )}
+                </div>
+              </div>
+            )}
           </section>
 
           <section className="card form-section">

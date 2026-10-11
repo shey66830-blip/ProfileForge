@@ -64,14 +64,9 @@ export default function MatchScore({
 
   return (
     <section className="card">
+      <p className="eyebrow">AI Resume Analysis</p>
 
-      <p className="eyebrow">
-        AI Resume Analysis
-      </p>
-
-      <h2>
-        Resume Match Breakdown
-      </h2>
+      <h2>Resume Match Breakdown</h2>
 
       <div
         className="card"
@@ -80,9 +75,7 @@ export default function MatchScore({
           marginBottom: 30,
         }}
       >
-        <h3>
-          Overall Match Score
-        </h3>
+        <h3>Overall Match Score</h3>
 
         <h1
           style={{
@@ -93,41 +86,20 @@ export default function MatchScore({
           {overall}%
         </h1>
 
-        <p>
-          AI calculated this score after comparing
-          your resume with the selected opportunity.
-        </p>
+        <p>AI calculated this score after comparing your resume with the selected opportunity.</p>
       </div>
 
-      <ScoreBar
-        title="ATS Compatibility"
-        value={ats}
-      />
+      <ScoreBar title="ATS Compatibility" value={ats} />
 
-      <ScoreBar
-        title="Skills Match"
-        value={skills}
-      />
+      <ScoreBar title="Skills Match" value={skills} />
 
-      <ScoreBar
-        title="Education Match"
-        value={education}
-      />
+      <ScoreBar title="Education Match" value={education} />
 
-      <ScoreBar
-        title="Eligibility Match"
-        value={eligibility}
-      />
+      <ScoreBar title="Eligibility Match" value={eligibility} />
 
-      <ScoreBar
-        title="Experience Match"
-        value={experience}
-      />
+      <ScoreBar title="Experience Match" value={experience} />
 
-      <ScoreBar
-        title="Location Match"
-        value={location}
-      />
+      <ScoreBar title="Location Match" value={location} />
 
       <div
         className="card"
@@ -135,39 +107,22 @@ export default function MatchScore({
           marginTop: 30,
         }}
       >
-        <h3>
-          AI Explanation
-        </h3>
+        <h3>AI Explanation</h3>
 
         <ul>
+          <li>ATS score checks formatting and resume quality.</li>
 
-          <li>
-            ATS score checks formatting and resume quality.
-          </li>
+          <li>Skills match compares resume skills with employer requirements.</li>
 
-          <li>
-            Skills match compares resume skills with employer requirements.
-          </li>
+          <li>Education match checks qualification compatibility.</li>
 
-          <li>
-            Education match checks qualification compatibility.
-          </li>
+          <li>Eligibility verifies mandatory requirements.</li>
 
-          <li>
-            Eligibility verifies mandatory requirements.
-          </li>
+          <li>Experience compares required and available experience.</li>
 
-          <li>
-            Experience compares required and available experience.
-          </li>
-
-          <li>
-            Location checks whether the opportunity matches your preferred region.
-          </li>
-
+          <li>Location checks whether the opportunity matches your preferred region.</li>
         </ul>
       </div>
-
     </section>
   );
 }

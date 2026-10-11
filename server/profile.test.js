@@ -61,7 +61,8 @@ describe("Profile model schema", () => {
 
 // ── Test the validation schemas ──
 
-const { profileUpdateSchema, profileImportSchema, profileSuggestionActionSchema } = await import("./middleware/validate.js");
+const { profileUpdateSchema, profileImportSchema, profileSuggestionActionSchema } =
+  await import("./middleware/validate.js");
 
 describe("Profile validation schemas", () => {
   describe("profileUpdateSchema", () => {
@@ -86,10 +87,7 @@ describe("Profile validation schemas", () => {
 
     it("accepts valid skills array", () => {
       const result = profileUpdateSchema.safeParse({
-        skills: [
-          { name: "JavaScript" },
-          { name: "Python", provenance: { source: "imported" } },
-        ],
+        skills: [{ name: "JavaScript" }, { name: "Python", provenance: { source: "imported" } }],
       });
       assert.equal(result.success, true);
     });
@@ -118,9 +116,7 @@ describe("Profile validation schemas", () => {
 
     it("accepts valid education array", () => {
       const result = profileUpdateSchema.safeParse({
-        education: [
-          { degree: "B.Tech", institution: "NIT Warangal", endDate: "2017" },
-        ],
+        education: [{ degree: "B.Tech", institution: "NIT Warangal", endDate: "2017" }],
       });
       assert.equal(result.success, true);
     });
@@ -163,9 +159,7 @@ describe("Profile validation schemas", () => {
         contact: { name: "Imported User", email: "import@test.com" },
         summary: "Imported summary",
         skills: ["JavaScript", "Python", "React"],
-        experience: [
-          { title: "Developer", company: "Test Corp", startDate: "2020" },
-        ],
+        experience: [{ title: "Developer", company: "Test Corp", startDate: "2020" }],
       });
       assert.equal(result.success, true);
     });
@@ -279,9 +273,6 @@ describe("Import-review flow", () => {
       status: "draft",
       importedFromDocument: "507f1f77bcf86cd799439012",
     });
-    assert.equal(
-      profile.importedFromDocument.toString(),
-      "507f1f77bcf86cd799439012"
-    );
+    assert.equal(profile.importedFromDocument.toString(), "507f1f77bcf86cd799439012");
   });
 });

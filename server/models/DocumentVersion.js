@@ -40,7 +40,7 @@ const documentVersionSchema = new mongoose.Schema(
     // Version number (1 = base, 2+ = tailored)
     versionNumber: { type: Number, default: 1 },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 // Index for efficient lookup by document + version type

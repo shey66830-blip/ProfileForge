@@ -1,15 +1,21 @@
 import Document from "../models/Document.js";
 import DocumentVersion from "../models/DocumentVersion.js";
-import { generateTailoringSuggestions, applySuggestions, computeDiff } from "../services/tailoringService.js";
+import {
+  generateTailoringSuggestions,
+  applySuggestions,
+  computeDiff,
+} from "../services/tailoringService.js";
 import { getProviderClient, humanizeProviderError } from "../services/aiProvider.js";
 import analyzeResume from "../services/aiResumeAnalyzer.js";
+import { incrementUsage } from "../middleware/planGate.js";
 
 // ── POST /api/tailoring/suggest ────────────────────────────────────
 // Generate structured tailoring suggestions for a resume + job description.
 // Returns individual suggestions with before/after diffs — not a full document.
 export const generateSuggestions = async (req, res) => {
   try {
-    const { documentId, jobDescription, jobTitle, jobCompany, instruction, provider, model } = req.body;
+    const { documentId, jobDescription, jobTitle, jobCompany, instruction, provider, model } =
+      req.body;
 
     if (!documentId) {
       return res.json({ ok: false, message: "Document ID is required." });
@@ -34,10 +40,7 @@ export const generateSuggestions = async (req, res) => {
     // Get the AI provider config
     let providerConfig;
     try {
-      providerConfig = getProviderClient(
-        provider || "experiential",
-        model || "claude-fable-5.1"
-      );
+      providerConfig = getProviderClient(provider || "experiential", model || "claude-fable-5.1");
     } catch (err) {
       return res.json({ ok: false, message: humanizeProviderError(err) });
     }
@@ -71,6 +74,13 @@ export const generateSuggestions = async (req, res) => {
       providerConfig,
     });
 
+    // Billable AI action succeeded — count it against the daily limit.
+    try {
+      await incrementUsage(req.user._id, "tailoring");
+    } catch {
+      /* non-fatal */
+    }
+
     return res.json({
       ok: true,
       suggestions: result.suggestions,
@@ -102,10 +112,17 @@ export const applyTailoring = async (req, res) => {
     }
 
     const originalText = doc.generatedText || "";
-    const { newText, appliedCount, appliedSuggestions } = applySuggestions(originalText, suggestions);
+    const { newText, appliedCount, appliedSuggestions } = applySuggestions(
+      originalText,
+      suggestions,
+    );
 
     if (appliedCount === 0) {
-      return res.json({ ok: false, message: "No suggestions were applied. Check that the before text matches the current document." });
+      return res.json({
+        ok: false,
+        message:
+          "No suggestions were applied. Check that the before text matches the current document.",
+      });
     }
 
     // Create a new tailored document
@@ -118,7 +135,9 @@ export const applyTailoring = async (req, res) => {
     });
 
     // Save a version snapshot
-    const lastVersion = await DocumentVersion.findOne({ document: doc._id }).sort({ versionNumber: -1 });
+    const lastVersion = await DocumentVersion.findOne({ document: doc._id }).sort({
+      versionNumber: -1,
+    });
     const nextVersion = (lastVersion?.versionNumber || 1) + 1;
 
     await DocumentVersion.create({
@@ -147,6 +166,79 @@ export const applyTailoring = async (req, res) => {
     });
   } catch (err) {
     return res.json({ ok: false, message: err.message || "Failed to apply tailoring." });
+  }
+};
+
+// ── POST /api/tailoring/batch ──────────────────────────────────────
+// PRO-only batch mode: run the suggestion engine for up to 10 documents
+// against one job description. Returns per-document results — failures for
+// one document never abort the rest.
+export const batchTailoring = async (req, res) => {
+  try {
+    const { documentIds, jobDescription, jobTitle, jobCompany, provider, model } = req.body;
+
+    if (!Array.isArray(documentIds) || documentIds.length === 0) {
+      return res.json({ ok: false, message: "documentIds must be a non-empty array." });
+    }
+    if (documentIds.length > 10) {
+      return res.json({ ok: false, message: "Batch is limited to 10 documents per run." });
+    }
+    if (!jobDescription) {
+      return res.json({ ok: false, message: "Job description is required." });
+    }
+
+    const results = [];
+    for (const documentId of documentIds) {
+      try {
+        const doc = await Document.findOne({ _id: documentId, user: req.user._id });
+        if (!doc) {
+          results.push({ documentId, ok: false, message: "Document not found." });
+          continue;
+        }
+        const resumeText = doc.generatedText || "";
+        if (!resumeText) {
+          results.push({ documentId, ok: false, message: "Document has no text content." });
+          continue;
+        }
+
+        const resumeAnalysis = analyzeResume(resumeText);
+        const providerConfig = getProviderClient(
+          provider || "experiential",
+          model || "claude-fable-5.1",
+        );
+        const result = await generateTailoringSuggestions({
+          resumeText,
+          resumeAnalysis,
+          jobDescription,
+          jobTitle,
+          jobCompany,
+          providerConfig,
+        });
+
+        try {
+          await incrementUsage(req.user._id, "tailoring");
+        } catch {
+          /* non-fatal */
+        }
+        results.push({
+          documentId,
+          title: doc.title,
+          ok: true,
+          suggestions: result.suggestions,
+          warnings: result.warnings,
+        });
+      } catch (err) {
+        results.push({
+          documentId,
+          ok: false,
+          message: err.message || "Tailoring failed for this document.",
+        });
+      }
+    }
+
+    return res.json({ ok: true, results });
+  } catch (err) {
+    return res.json({ ok: false, message: err.message || "Batch tailoring failed." });
   }
 };
 

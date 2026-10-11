@@ -4,135 +4,74 @@
 // =============================================
 
 export default function locationMatcher({
+  userLocation = {},
 
-    userLocation = {},
-
-    jobLocation = {}
-
+  jobLocation = {},
 }) {
+  const {
+    country: userCountry = "",
 
-    const {
+    state: userState = "",
 
-        country: userCountry = "",
+    city: userCity = "",
+  } = userLocation;
 
-        state: userState = "",
+  const {
+    country: jobCountry = "",
 
-        city: userCity = ""
+    state: jobState = "",
 
-    } = userLocation;
+    city: jobCity = "",
 
-    const {
+    remote = false,
+  } = jobLocation;
 
-        country: jobCountry = "",
+  // ------------------------
 
-        state: jobState = "",
+  let score = 0;
 
-        city: jobCity = "",
+  let reason = "";
 
-        remote = false
+  // ------------------------
 
-    } = jobLocation;
-
-    // ------------------------
-
-    let score = 0;
-
-    let reason = "";
-
-    // ------------------------
-
-    if (remote) {
-
-        return {
-
-            score: 100,
-
-            reason: "Remote opportunity."
-
-        };
-
-    }
-
-    // ------------------------
-
-    if (
-
-        userCountry &&
-
-        jobCountry &&
-
-        userCountry.toLowerCase() ===
-
-        jobCountry.toLowerCase()
-
-    ) {
-
-        score += 50;
-
-    }
-
-    // ------------------------
-
-    if (
-
-        userState &&
-
-        jobState &&
-
-        userState.toLowerCase() ===
-
-        jobState.toLowerCase()
-
-    ) {
-
-        score += 30;
-
-    }
-
-    // ------------------------
-
-    if (
-
-        userCity &&
-
-        jobCity &&
-
-        userCity.toLowerCase() ===
-
-        jobCity.toLowerCase()
-
-    ) {
-
-        score += 20;
-
-    }
-
-    // ------------------------
-
-    if (score === 100)
-
-        reason = "Perfect location match.";
-
-    else if (score >= 70)
-
-        reason = "Nearby location.";
-
-    else if (score >= 50)
-
-        reason = "Same country.";
-
-    else
-
-        reason = "Different location.";
-
-    // ------------------------
-
+  if (remote) {
     return {
+      score: 100,
 
-        score,
-
-        reason
-
+      reason: "Remote opportunity.",
     };
+  }
 
+  // ------------------------
+
+  if (userCountry && jobCountry && userCountry.toLowerCase() === jobCountry.toLowerCase()) {
+    score += 50;
+  }
+
+  // ------------------------
+
+  if (userState && jobState && userState.toLowerCase() === jobState.toLowerCase()) {
+    score += 30;
+  }
+
+  // ------------------------
+
+  if (userCity && jobCity && userCity.toLowerCase() === jobCity.toLowerCase()) {
+    score += 20;
+  }
+
+  // ------------------------
+
+  if (score === 100) reason = "Perfect location match.";
+  else if (score >= 70) reason = "Nearby location.";
+  else if (score >= 50) reason = "Same country.";
+  else reason = "Different location.";
+
+  // ------------------------
+
+  return {
+    score,
+
+    reason,
+  };
 }

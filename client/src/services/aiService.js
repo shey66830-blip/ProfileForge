@@ -52,7 +52,14 @@ export async function editDocumentWithAI(documentId, instruction, provider, mode
   }
 }
 
-export async function analyzeResumeJob(resumeId, jobTitle, jobCompany, jobDescription, provider, model) {
+export async function analyzeResumeJob(
+  resumeId,
+  jobTitle,
+  jobCompany,
+  jobDescription,
+  provider,
+  model,
+) {
   try {
     const res = await fetch(`${API_BASE}/ai/analyze-resume-job`, {
       method: "POST",
@@ -74,7 +81,16 @@ export async function analyzeResumeJob(resumeId, jobTitle, jobCompany, jobDescri
   }
 }
 
-export async function compareResumeJob(resumeId, jobTitle, jobCompany, jobDescription, providerA, modelA, providerB, modelB) {
+export async function compareResumeJob(
+  resumeId,
+  jobTitle,
+  jobCompany,
+  jobDescription,
+  providerA,
+  modelA,
+  providerB,
+  modelB,
+) {
   try {
     const res = await fetch(`${API_BASE}/ai/compare-resume-job`, {
       method: "POST",

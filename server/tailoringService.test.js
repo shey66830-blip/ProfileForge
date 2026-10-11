@@ -98,8 +98,18 @@ JavaScript, React, Node.js`;
 
   it("applies accepted suggestions", () => {
     const suggestions = [
-      { id: "1", accepted: true, before: "Built React applications", after: "Architected and built scalable React applications serving 1M+ users" },
-      { id: "2", accepted: false, before: "Led team of 5", after: "Led cross-functional team of 8 engineers" },
+      {
+        id: "1",
+        accepted: true,
+        before: "Built React applications",
+        after: "Architected and built scalable React applications serving 1M+ users",
+      },
+      {
+        id: "2",
+        accepted: false,
+        before: "Led team of 5",
+        after: "Led cross-functional team of 8 engineers",
+      },
     ];
     const result = applySuggestions(originalText, suggestions);
     assert.ok(result.newText.includes("Architected and built scalable"));
@@ -139,8 +149,18 @@ JavaScript, React, Node.js`;
 
   it("applies multiple accepted suggestions", () => {
     const suggestions = [
-      { id: "1", accepted: true, before: "Built React applications", after: "Built scalable React apps" },
-      { id: "2", accepted: true, before: "JavaScript, React, Node.js", after: "JavaScript, React, Node.js, TypeScript, PostgreSQL" },
+      {
+        id: "1",
+        accepted: true,
+        before: "Built React applications",
+        after: "Built scalable React apps",
+      },
+      {
+        id: "2",
+        accepted: true,
+        before: "JavaScript, React, Node.js",
+        after: "JavaScript, React, Node.js, TypeScript, PostgreSQL",
+      },
     ];
     const result = applySuggestions(originalText, suggestions);
     assert.equal(result.appliedCount, 2);

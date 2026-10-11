@@ -24,9 +24,7 @@ export function extractSkills(text = "") {
 export function categorizeSkills(skillList = []) {
   const result = {};
   for (const category in SKILL_DATABASE) {
-    result[category] = skillList.filter((skill) =>
-      SKILL_DATABASE[category].includes(skill)
-    );
+    result[category] = skillList.filter((skill) => SKILL_DATABASE[category].includes(skill));
   }
   return result;
 }

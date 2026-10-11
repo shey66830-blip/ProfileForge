@@ -21,13 +21,16 @@ import courseRoutes, { certRouter } from "./routes/courseRoutes.js";
 import profileRoutes from "./routes/profileRoutes.js";
 import exportRoutes from "./routes/exportRoutes.js";
 import tailoringRoutes from "./routes/tailoringRoutes.js";
+import reverseBoardRoutes from "./routes/reverseBoardRoutes.js";
+import analyticsRoutes from "./routes/analyticsRoutes.js";
+import supportRoutes from "./routes/supportRoutes.js";
+import matchmakingRoutes from "./routes/matchmakingRoutes.js";
 
 const app = express();
 
 app.use(passport.initialize());
 app.use(express.json({ limit: "1mb" }));
 app.use(cookieParser());
-
 
 const isProduction = process.env.NODE_ENV === "production";
 
@@ -46,7 +49,7 @@ app.use(
           "http://127.0.0.1:5176",
         ],
     credentials: true,
-  })
+  }),
 );
 
 app.use("/api", generalLimiter);
@@ -63,6 +66,10 @@ app.use("/api/certifications", certRouter);
 app.use("/api/profile", profileRoutes);
 app.use("/api/export", exportRoutes);
 app.use("/api/tailoring", tailoringRoutes);
+app.use("/api/reverse", reverseBoardRoutes);
+app.use("/api/analytics", analyticsRoutes);
+app.use("/api/support", supportRoutes);
+app.use("/api/matchmaking", matchmakingRoutes);
 
 app.get("/api/health", (req, res) => {
   res.json({ status: "ok", uptime: process.uptime() });

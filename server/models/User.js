@@ -10,7 +10,7 @@ const userSchema = new mongoose.Schema(
     googleId: String,
     githubId: String,
     avatar: String,
-    plan: { type: String, enum: ["free","premium","pro"], default: "free" },
+    plan: { type: String, enum: ["free", "premium", "pro"], default: "free" },
     premium: {
       type: Boolean,
       default: false,
@@ -19,8 +19,11 @@ const userSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
+    // Hiring mode flips the Reverse Job Board into its company-side view:
+    // only hiring-mode users can browse talent and apply to hire workers.
+    hiringMode: { type: Boolean, default: false },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 export default mongoose.model("User", userSchema);

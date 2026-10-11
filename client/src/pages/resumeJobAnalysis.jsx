@@ -33,9 +33,7 @@ async function uploadAndCreateResume(file, onDocumentsChange) {
         email: fields.email || "",
         phone: fields.phone || "",
         location: fields.location || "",
-        skills: fields.skills
-          ? fields.skills.split(", ").filter(Boolean)
-          : [],
+        skills: fields.skills ? fields.skills.split(", ").filter(Boolean) : [],
         education: fields.education || "",
         experience: fields.experience || "",
         projects: fields.projects || "",
@@ -59,7 +57,12 @@ async function uploadAndCreateResume(file, onDocumentsChange) {
   return newId;
 }
 
-export default function ResumeJobAnalysis({ documents, onAnalysisResult, onComparisonResult, onDocumentsChange }) {
+export default function ResumeJobAnalysis({
+  documents,
+  onAnalysisResult,
+  onComparisonResult,
+  onDocumentsChange,
+}) {
   const [selectedId, setSelectedId] = useState(documents[0]?._id || "");
   const [jobTitle, setJobTitle] = useState("");
   const [jobCompany, setJobCompany] = useState("");
@@ -113,7 +116,7 @@ export default function ResumeJobAnalysis({ documents, onAnalysisResult, onCompa
       jobCompany,
       jobDescription,
       selectedModel.provider,
-      selectedModel.model
+      selectedModel.model,
     );
 
     setLoading(false);
@@ -165,7 +168,7 @@ export default function ResumeJobAnalysis({ documents, onAnalysisResult, onCompa
       modelA.provider,
       modelA.model,
       modelB.provider,
-      modelB.model
+      modelB.model,
     );
 
     setCompareLoading(false);
@@ -186,8 +189,14 @@ export default function ResumeJobAnalysis({ documents, onAnalysisResult, onCompa
       setError("Please select a file first.");
       return;
     }
-    if (!["application/pdf", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "text/plain"].includes(uploadFile.type) &&
-        !uploadFile.name.match(/\.(pdf|docx|txt)$/i)) {
+    if (
+      ![
+        "application/pdf",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "text/plain",
+      ].includes(uploadFile.type) &&
+      !uploadFile.name.match(/\.(pdf|docx|txt)$/i)
+    ) {
       setError("Only PDF, DOCX, or TXT files are allowed.");
       return;
     }
@@ -215,8 +224,8 @@ export default function ResumeJobAnalysis({ documents, onAnalysisResult, onCompa
           <p className="eyebrow">Resume intelligence</p>
           <h1>Analyze resume against a job description</h1>
           <p>
-            Select a saved resume, paste a job description, and see a structured
-            match breakdown. You can also compare two models on the same job.
+            Select a saved resume, paste a job description, and see a structured match breakdown.
+            You can also compare two models on the same job.
           </p>
         </div>
       </section>
@@ -254,8 +263,8 @@ export default function ResumeJobAnalysis({ documents, onAnalysisResult, onCompa
               <button
                 className="secondary-btn"
                 style={{ marginTop: 8 }}
-                onClick={() => document.getElementById("resume-upload-input").click()}
-                disabled={uploading || !jobDescription.trim() && documents.length === 0}
+                onClick={handleUpload}
+                disabled={uploading || (!jobDescription.trim() && documents.length === 0)}
               >
                 {uploading ? "Uploading..." : "Upload & Save"}
               </button>
@@ -291,9 +300,8 @@ export default function ResumeJobAnalysis({ documents, onAnalysisResult, onCompa
                     {doc.title}
                   </option>
                 ))}
-              {documents.filter((doc) => doc.type === "resume" || doc.type === "cv").length === 0 && (
-                <option value="">No saved resumes — upload one above</option>
-              )}
+              {documents.filter((doc) => doc.type === "resume" || doc.type === "cv").length ===
+                0 && <option value="">No saved resumes — upload one above</option>}
             </select>
 
             {selectedDoc && (
@@ -312,7 +320,9 @@ export default function ResumeJobAnalysis({ documents, onAnalysisResult, onCompa
             <p className="eyebrow">Step 2</p>
             <h2>Job details</h2>
 
-            <label className="ai-model-label">Job title <span className="muted">(optional)</span></label>
+            <label className="ai-model-label">
+              Job title <span className="muted">(optional)</span>
+            </label>
             <input
               className="input"
               placeholder="e.g. Frontend Developer"
@@ -353,9 +363,9 @@ export default function ResumeJobAnalysis({ documents, onAnalysisResult, onCompa
               <select
                 value={`${selectedModel.provider}::${selectedModel.model}`}
                 onChange={(e) => {
-                  const next = AI_MODELS.find(
-                    (m) => `${m.provider}::${m.model}` === e.target.value
-                  ) || DEFAULT_MODEL;
+                  const next =
+                    AI_MODELS.find((m) => `${m.provider}::${m.model}` === e.target.value) ||
+                    DEFAULT_MODEL;
                   setSelectedModel(next);
                 }}
               >
@@ -384,7 +394,11 @@ export default function ResumeJobAnalysis({ documents, onAnalysisResult, onCompa
               {compareLoading ? "Comparing..." : "Compare Two Models"}
             </button>
 
-            {compareError && <p className="error" style={{ marginTop: 8 }}>{compareError}</p>}
+            {compareError && (
+              <p className="error" style={{ marginTop: 8 }}>
+                {compareError}
+              </p>
+            )}
 
             {comparison && (
               <div className="analysis-result">
@@ -397,11 +411,7 @@ export default function ResumeJobAnalysis({ documents, onAnalysisResult, onCompa
       )}
 
       {analysis && (
-        <AnalysisResult
-          analysis={analysis}
-          modelLabel={analysisModel}
-          qualError={qualError}
-        />
+        <AnalysisResult analysis={analysis} modelLabel={analysisModel} qualError={qualError} />
       )}
       {comparison && <ComparisonResult comparison={comparison} />}
     </main>
@@ -418,7 +428,9 @@ function AnalysisResult({ analysis, modelLabel, qualError }) {
   return (
     <section className="card analysis-result">
       <p className="eyebrow">Analysis result</p>
-      <h2>{analysis.resume?.title || "Resume"} vs {job.title || "Job"}</h2>
+      <h2>
+        {analysis.resume?.title || "Resume"} vs {job.title || "Job"}
+      </h2>
 
       <div className="grid three">
         <div className="analysis-score-card">
@@ -439,7 +451,9 @@ function AnalysisResult({ analysis, modelLabel, qualError }) {
         <div className="grid two" style={{ marginTop: 16 }}>
           <div className="analysis-score-card">
             <h3>ATS score</h3>
-            <p>{ats.score ?? "—"} — {ats.grade || "—"}</p>
+            <p>
+              {ats.score ?? "—"} — {ats.grade || "—"}
+            </p>
           </div>
           <div className="analysis-score-card">
             <h3>Estimated experience</h3>
@@ -493,7 +507,7 @@ function AnalysisResult({ analysis, modelLabel, qualError }) {
         </div>
       </div>
 
-      {(m.reasons && m.reasons.length) && (
+      {m.reasons && m.reasons.length && (
         <div className="analysis-section">
           <h3>Why this score</h3>
           <ul>
@@ -528,25 +542,41 @@ function AnalysisResult({ analysis, modelLabel, qualError }) {
           {qualitative.strengths?.length > 0 && (
             <>
               <h4>Strengths</h4>
-              <ul>{qualitative.strengths.map((s, i) => <li key={i}>{s}</li>)}</ul>
+              <ul>
+                {qualitative.strengths.map((s, i) => (
+                  <li key={i}>{s}</li>
+                ))}
+              </ul>
             </>
           )}
           {qualitative.weaknesses?.length > 0 && (
             <>
               <h4>Weaknesses</h4>
-              <ul>{qualitative.weaknesses.map((s, i) => <li key={i}>{s}</li>)}</ul>
+              <ul>
+                {qualitative.weaknesses.map((s, i) => (
+                  <li key={i}>{s}</li>
+                ))}
+              </ul>
             </>
           )}
           {qualitative.recommendations?.length > 0 && (
             <>
               <h4>Recommendations</h4>
-              <ul>{qualitative.recommendations.map((s, i) => <li key={i}>{s}</li>)}</ul>
+              <ul>
+                {qualitative.recommendations.map((s, i) => (
+                  <li key={i}>{s}</li>
+                ))}
+              </ul>
             </>
           )}
           {qualitative.evidence?.length > 0 && (
             <>
               <h4>Evidence</h4>
-              <ul>{qualitative.evidence.map((s, i) => <li key={i}>{s}</li>)}</ul>
+              <ul>
+                {qualitative.evidence.map((s, i) => (
+                  <li key={i}>{s}</li>
+                ))}
+              </ul>
             </>
           )}
         </div>
@@ -561,25 +591,39 @@ function QualBlock({ qualitative, error }) {
     return (
       <div style={{ marginTop: 10 }}>
         <span className="badge">AI insight unavailable</span>
-        <p className="muted" style={{ margin: "6px 0 0" }}>{error}</p>
+        <p className="muted" style={{ margin: "6px 0 0" }}>
+          {error}
+        </p>
       </div>
     );
   }
   return (
     <div style={{ marginTop: 10 }}>
       <span className="badge">AI-generated insight</span>
-      {qualitative.summary && <p className="muted" style={{ margin: "6px 0" }}>{qualitative.summary}</p>}
+      {qualitative.summary && (
+        <p className="muted" style={{ margin: "6px 0" }}>
+          {qualitative.summary}
+        </p>
+      )}
       {qualitative.strengths?.length > 0 && (
-        <p className="muted" style={{ margin: "4px 0" }}><b>Strengths:</b> {qualitative.strengths.join(" • ")}</p>
+        <p className="muted" style={{ margin: "4px 0" }}>
+          <b>Strengths:</b> {qualitative.strengths.join(" • ")}
+        </p>
       )}
       {qualitative.weaknesses?.length > 0 && (
-        <p className="muted" style={{ margin: "4px 0" }}><b>Weaknesses:</b> {qualitative.weaknesses.join(" • ")}</p>
+        <p className="muted" style={{ margin: "4px 0" }}>
+          <b>Weaknesses:</b> {qualitative.weaknesses.join(" • ")}
+        </p>
       )}
       {qualitative.recommendations?.length > 0 && (
-        <p className="muted" style={{ margin: "4px 0" }}><b>Recommendations:</b> {qualitative.recommendations.join(" • ")}</p>
+        <p className="muted" style={{ margin: "4px 0" }}>
+          <b>Recommendations:</b> {qualitative.recommendations.join(" • ")}
+        </p>
       )}
       {qualitative.evidence?.length > 0 && (
-        <p className="muted" style={{ margin: "4px 0" }}><b>Evidence:</b> {qualitative.evidence.join(" • ")}</p>
+        <p className="muted" style={{ margin: "4px 0" }}>
+          <b>Evidence:</b> {qualitative.evidence.join(" • ")}
+        </p>
       )}
     </div>
   );
@@ -620,10 +664,14 @@ function ComparisonResult({ comparison }) {
           )}
           {a?.match?.matchedSkills?.length ? (
             <div style={{ marginTop: 8 }}>
-              <p className="muted" style={{ margin: "4px 0 8px" }}>Matched skills</p>
+              <p className="muted" style={{ margin: "4px 0 8px" }}>
+                Matched skills
+              </p>
               <div className="skill-pills">
                 {a.match.matchedSkills.map((s) => (
-                  <span key={s} className="skill-pill">{s}</span>
+                  <span key={s} className="skill-pill">
+                    {s}
+                  </span>
                 ))}
               </div>
             </div>
@@ -645,10 +693,14 @@ function ComparisonResult({ comparison }) {
           )}
           {b?.match?.matchedSkills?.length ? (
             <div style={{ marginTop: 8 }}>
-              <p className="muted" style={{ margin: "4px 0 8px" }}>Matched skills</p>
+              <p className="muted" style={{ margin: "4px 0 8px" }}>
+                Matched skills
+              </p>
               <div className="skill-pills">
                 {b.match.matchedSkills.map((s) => (
-                  <span key={s} className="skill-pill">{s}</span>
+                  <span key={s} className="skill-pill">
+                    {s}
+                  </span>
                 ))}
               </div>
             </div>
@@ -661,32 +713,26 @@ function ComparisonResult({ comparison }) {
         <div className="comparison-dimension">
           <span>Overall</span>
           <span>
-            {dim.overall?.agreement === "agree" ? "Agree" : "Disagree"}{" "}
-            {fmtDim(dim.overall)}
+            {dim.overall?.agreement === "agree" ? "Agree" : "Disagree"} {fmtDim(dim.overall)}
           </span>
         </div>
         <div className="comparison-dimension">
           <span>Skill match</span>
           <span>
-            {dim.skillMatch?.agreement === "agree" ? "Agree" : "Disagree"}{" "}
-            {fmtDim(dim.skillMatch)}
+            {dim.skillMatch?.agreement === "agree" ? "Agree" : "Disagree"} {fmtDim(dim.skillMatch)}
           </span>
         </div>
         <div className="comparison-dimension">
           <span>Experience match</span>
           <span>
-            {dim.experienceMatch?.agreement === "agree"
-              ? "Agree"
-              : "Disagree"}{" "}
+            {dim.experienceMatch?.agreement === "agree" ? "Agree" : "Disagree"}{" "}
             {fmtDim(dim.experienceMatch)}
           </span>
         </div>
         <div className="comparison-dimension">
           <span>Education match</span>
           <span>
-            {dim.educationMatch?.agreement === "agree"
-              ? "Agree"
-              : "Disagree"}{" "}
+            {dim.educationMatch?.agreement === "agree" ? "Agree" : "Disagree"}{" "}
             {fmtDim(dim.educationMatch)}
           </span>
         </div>
@@ -736,7 +782,6 @@ function ComparisonResult({ comparison }) {
           )}
         </div>
       </div>
-
     </section>
   );
 }

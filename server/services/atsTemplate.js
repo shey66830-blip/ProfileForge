@@ -54,7 +54,8 @@ export function generateATSHTML(profile) {
   const contact = profile.contact || {};
   const contactParts = [];
   if (contact.name) contactParts.push(`<strong>${esc(contact.name)}</strong>`);
-  if (contact.email) contactParts.push(`<a href="mailto:${esc(contact.email)}">${esc(contact.email)}</a>`);
+  if (contact.email)
+    contactParts.push(`<a href="mailto:${esc(contact.email)}">${esc(contact.email)}</a>`);
   if (contact.phone) contactParts.push(`<span>${esc(contact.phone)}</span>`);
   if (contact.location) contactParts.push(`<span>${esc(contact.location)}</span>`);
 
@@ -83,7 +84,9 @@ export function generateATSHTML(profile) {
       if (dates) parts.push(`<em>${esc(dates)}</em>`);
       if (exp.location) parts.push(`<span>${esc(exp.location)}</span>`);
       const headerLine = parts.join(", ");
-      const desc = exp.description ? `<div style="margin-top:4px;">${esc(exp.description).replace(/\n/g, "<br/>")}</div>` : "";
+      const desc = exp.description
+        ? `<div style="margin-top:4px;">${esc(exp.description).replace(/\n/g, "<br/>")}</div>`
+        : "";
       return `<li style="margin-bottom:8px;">${headerLine}${desc}</li>`;
     });
     sections.push({
@@ -126,8 +129,12 @@ export function generateATSHTML(profile) {
       const dates = [proj.startDate, proj.endDate].filter(Boolean).join(" – ");
       if (dates) parts.push(`<em>${esc(dates)}</em>`);
       const header = parts.join(", ");
-      const desc = proj.description ? `<div style="margin-top:4px;">${esc(proj.description).replace(/\n/g, "<br/>")}</div>` : "";
-      const tech = proj.technologies?.length ? `<div style="margin-top:2px;"><em>Tech: ${proj.technologies.map(esc).join(", ")}</em></div>` : "";
+      const desc = proj.description
+        ? `<div style="margin-top:4px;">${esc(proj.description).replace(/\n/g, "<br/>")}</div>`
+        : "";
+      const tech = proj.technologies?.length
+        ? `<div style="margin-top:2px;"><em>Tech: ${proj.technologies.map(esc).join(", ")}</em></div>`
+        : "";
       return `<li style="margin-bottom:8px;">${header}${desc}${tech}</li>`;
     });
     sections.push({
@@ -252,7 +259,7 @@ export function generateATSPlainText(profile) {
   // Skills
   if (profile.skills?.length) {
     lines.push("SKILLS");
-    const names = profile.skills.map((s) => typeof s === "string" ? s : s.name);
+    const names = profile.skills.map((s) => (typeof s === "string" ? s : s.name));
     lines.push(names.join(", "));
     lines.push("");
   }

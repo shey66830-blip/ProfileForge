@@ -3,16 +3,13 @@ import React from "react";
 export default function LoadingSkeleton({ count = 6 }) {
   return (
     <section>
-
       <div
         className="grid three"
         style={{
           gap: "20px",
         }}
       >
-
         {Array.from({ length: count }).map((_, index) => (
-
           <div
             key={index}
             className="card"
@@ -21,7 +18,6 @@ export default function LoadingSkeleton({ count = 6 }) {
               animation: "pulse 1.5s infinite",
             }}
           >
-
             <div
               style={{
                 display: "flex",
@@ -30,9 +26,7 @@ export default function LoadingSkeleton({ count = 6 }) {
                 marginBottom: "20px",
               }}
             >
-
               <div>
-
                 <div
                   style={{
                     width: "180px",
@@ -51,7 +45,6 @@ export default function LoadingSkeleton({ count = 6 }) {
                     borderRadius: "8px",
                   }}
                 />
-
               </div>
 
               <div
@@ -62,98 +55,87 @@ export default function LoadingSkeleton({ count = 6 }) {
                   background: "#2b2b40",
                 }}
               />
-
             </div>
 
             <hr />
 
-            {[1,2,3,4,5].map((item)=>(
-
+            {[1, 2, 3, 4, 5].map((item) => (
               <div
                 key={item}
                 style={{
-                  marginBottom:"15px",
+                  marginBottom: "15px",
                 }}
               >
-
                 <div
                   style={{
-                    width:"90px",
-                    height:"12px",
-                    background:"#2b2b40",
-                    borderRadius:"8px",
-                    marginBottom:"8px",
+                    width: "90px",
+                    height: "12px",
+                    background: "#2b2b40",
+                    borderRadius: "8px",
+                    marginBottom: "8px",
                   }}
                 />
 
                 <div
                   style={{
-                    width:"100%",
-                    height:"15px",
-                    background:"#2b2b40",
-                    borderRadius:"8px",
+                    width: "100%",
+                    height: "15px",
+                    background: "#2b2b40",
+                    borderRadius: "8px",
                   }}
                 />
-
               </div>
-
             ))}
 
             <hr />
 
             <div
               style={{
-                width:"100%",
-                height:"12px",
-                background:"#2b2b40",
-                borderRadius:"20px",
-                marginBottom:"15px",
+                width: "100%",
+                height: "12px",
+                background: "#2b2b40",
+                borderRadius: "20px",
+                marginBottom: "15px",
               }}
             />
 
             <div
               style={{
-                width:"55%",
-                height:"28px",
-                background:"#2b2b40",
-                borderRadius:"8px",
-                marginBottom:"20px",
+                width: "55%",
+                height: "28px",
+                background: "#2b2b40",
+                borderRadius: "8px",
+                marginBottom: "20px",
               }}
             />
 
             <div
               style={{
-                display:"flex",
-                gap:"10px",
+                display: "flex",
+                gap: "10px",
               }}
             >
-
               <div
                 style={{
-                  flex:1,
-                  height:"40px",
-                  borderRadius:"8px",
-                  background:"#2b2b40",
+                  flex: 1,
+                  height: "40px",
+                  borderRadius: "8px",
+                  background: "#2b2b40",
                 }}
               />
 
               <div
                 style={{
-                  flex:1,
-                  height:"40px",
-                  borderRadius:"8px",
-                  background:"#2b2b40",
+                  flex: 1,
+                  height: "40px",
+                  borderRadius: "8px",
+                  background: "#2b2b40",
                 }}
               />
-
             </div>
-
           </div>
-
         ))}
-
       </div>
-
     </section>
   );
 }

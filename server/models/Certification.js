@@ -28,7 +28,7 @@ const certificationSchema = new mongoose.Schema(
     ],
     isActive: { type: Boolean, default: true },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 certificationSchema.index({ skills: 1 });

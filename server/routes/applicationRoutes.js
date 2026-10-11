@@ -8,7 +8,11 @@ import {
   getTransitions,
 } from "../controllers/applicationController.js";
 import { protect } from "../middleware/authMiddleware.js";
-import { validate, applicationCreateSchema, applicationUpdateSchema } from "../middleware/validate.js";
+import {
+  validate,
+  applicationCreateSchema,
+  applicationUpdateSchema,
+} from "../middleware/validate.js";
 
 const router = express.Router();
 

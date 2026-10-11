@@ -17,9 +17,7 @@ export default function DocumentCard({ doc, openDocument, editDocument, onDelete
         <p className="eyebrow">{doc.type.toUpperCase()}</p>
         <h3>{doc.title}</h3>
         <p>{doc.data?.name || "Unnamed profile"}</p>
-        <p className="muted">
-          Last edited: {new Date(doc.updatedAt).toLocaleString()}
-        </p>
+        <p className="muted">Last edited: {new Date(doc.updatedAt).toLocaleString()}</p>
       </div>
 
       <div className="row">

@@ -3,14 +3,18 @@ import { z } from "zod";
 // AI provider/model allowlist — must match server/services/aiProvider.js
 const AI_PROVIDERS = ["openai", "experiential"];
 const AI_MODELS = ["gpt-4o-mini", "gpt-6-astra", "claude-fable-5.1"];
-const aiProviderEnum = z.string().optional().refine(
-  (val) => !val || AI_PROVIDERS.includes(val),
-  { message: `Provider must be one of: ${AI_PROVIDERS.join(", ")}` }
-);
-const aiModelEnum = z.string().optional().refine(
-  (val) => !val || AI_MODELS.includes(val),
-  { message: `Model must be one of: ${AI_MODELS.join(", ")}` }
-);
+const aiProviderEnum = z
+  .string()
+  .optional()
+  .refine((val) => !val || AI_PROVIDERS.includes(val), {
+    message: `Provider must be one of: ${AI_PROVIDERS.join(", ")}`,
+  });
+const aiModelEnum = z
+  .string()
+  .optional()
+  .refine((val) => !val || AI_MODELS.includes(val), {
+    message: `Model must be one of: ${AI_MODELS.join(", ")}`,
+  });
 
 const signupSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -60,10 +64,13 @@ const aiCompareSchema = z.object({
 
 // ── Profile schemas ─────────────────────────────────────────────
 
-const provenanceShape = z.object({
-  source: z.enum(["user", "imported", "ai_suggestion"]).optional(),
-  verified: z.boolean().optional(),
-}).partial().optional();
+const provenanceShape = z
+  .object({
+    source: z.enum(["user", "imported", "ai_suggestion"]).optional(),
+    verified: z.boolean().optional(),
+  })
+  .partial()
+  .optional();
 
 const profileContactSchema = z.object({
   name: z.string().max(200).optional(),
@@ -208,17 +215,29 @@ const tailoringRequestSchema = z.object({
 
 const tailoringApplySchema = z.object({
   documentId: z.string().min(1, "Document ID is required"),
-  suggestions: z.array(z.object({
-    id: z.string(),
-    accepted: z.boolean(),
-  })).min(1).max(20),
+  suggestions: z
+    .array(
+      z.object({
+        id: z.string(),
+        accepted: z.boolean(),
+      }),
+    )
+    .min(1)
+    .max(20),
 });
 
 // ── Application schemas ───────────────────────────────────────────
 
 const APPLICATION_STATUSES = [
-  "saved", "preparing", "applied", "screening",
-  "interview", "offer", "accepted", "rejected", "withdrawn",
+  "saved",
+  "preparing",
+  "applied",
+  "screening",
+  "interview",
+  "offer",
+  "accepted",
+  "rejected",
+  "withdrawn",
 ];
 
 const applicationCreateSchema = z.object({
@@ -232,16 +251,18 @@ const applicationCreateSchema = z.object({
   documentId: z.string().optional(),
   resumeVersionId: z.string().optional(),
   coverLetterVersionId: z.string().optional(),
-  jobSnapshot: z.object({
-    title: z.string().max(200).optional(),
-    company: z.string().max(200).optional(),
-    location: z.string().max(200).optional(),
-    source: z.string().max(100).optional(),
-    description: z.string().max(10000).optional(),
-    salary: z.any().optional(),
-    applyUrl: z.string().max(500).optional(),
-    skills: z.array(z.string().max(100)).max(50).optional(),
-  }).optional(),
+  jobSnapshot: z
+    .object({
+      title: z.string().max(200).optional(),
+      company: z.string().max(200).optional(),
+      location: z.string().max(200).optional(),
+      source: z.string().max(100).optional(),
+      description: z.string().max(10000).optional(),
+      salary: z.any().optional(),
+      applyUrl: z.string().max(500).optional(),
+      skills: z.array(z.string().max(100)).max(50).optional(),
+    })
+    .optional(),
 });
 
 const applicationUpdateSchema = z.object({
@@ -252,22 +273,64 @@ const applicationUpdateSchema = z.object({
   documentId: z.string().optional(),
   resumeVersionId: z.string().optional(),
   coverLetterVersionId: z.string().optional(),
-  jobSnapshot: z.object({
-    title: z.string().max(200).optional(),
-    company: z.string().max(200).optional(),
-    location: z.string().max(200).optional(),
-    source: z.string().max(100).optional(),
-    description: z.string().max(10000).optional(),
-    salary: z.any().optional(),
-    applyUrl: z.string().max(500).optional(),
-    skills: z.array(z.string().max(100)).max(50).optional(),
-  }).optional(),
+  jobSnapshot: z
+    .object({
+      title: z.string().max(200).optional(),
+      company: z.string().max(200).optional(),
+      location: z.string().max(200).optional(),
+      source: z.string().max(100).optional(),
+      description: z.string().max(10000).optional(),
+      salary: z.any().optional(),
+      applyUrl: z.string().max(500).optional(),
+      skills: z.array(z.string().max(100)).max(50).optional(),
+    })
+    .optional(),
+});
+
+// ── Reverse job board schemas ─────────────────────────────────────
+
+const reversePostSchema = z.object({
+  headline: z.string().min(4, "Headline must be at least 4 characters").max(200),
+  why: z.string().max(5000).optional(),
+  skills: z.array(z.string().min(1).max(100)).max(40).optional(),
+  workMode: z.enum(["remote", "hybrid", "onsite", "any"]).optional(),
+  locations: z.array(z.string().min(1).max(200)).max(20).optional(),
+  openToRelocate: z.boolean().optional(),
+  employmentType: z.enum(["full_time", "part_time", "contract", "internship", "any"]).optional(),
+  expectedSalary: z.string().max(100).optional(),
+  availability: z.string().max(100).optional(),
+  portfolioUrl: z.string().url().max(500).optional().or(z.literal("")),
+  status: z.enum(["draft", "published", "paused", "closed"]).optional(),
+});
+
+const reverseInquirySchema = z.object({
+  postId: z.string().min(1, "Post ID is required"),
+  message: z.string().min(10, "Message must be at least 10 characters").max(2000),
+  company: z.string().max(200).optional(),
+  role: z.string().max(200).optional(),
+});
+
+const reverseInquiryActionSchema = z.object({
+  action: z.enum(["accept", "decline"]),
 });
 
 export {
-  signupSchema, loginSchema, documentSchema,
-  aiEditSchema, aiAnalysisSchema, aiCompareSchema,
-  profileUpdateSchema, profileImportSchema, profileSuggestionActionSchema, profilePromoteSchema,
-  tailoringRequestSchema, tailoringApplySchema,
-  applicationCreateSchema, applicationUpdateSchema, APPLICATION_STATUSES,
+  signupSchema,
+  loginSchema,
+  documentSchema,
+  aiEditSchema,
+  aiAnalysisSchema,
+  aiCompareSchema,
+  profileUpdateSchema,
+  profileImportSchema,
+  profileSuggestionActionSchema,
+  profilePromoteSchema,
+  tailoringRequestSchema,
+  tailoringApplySchema,
+  applicationCreateSchema,
+  applicationUpdateSchema,
+  APPLICATION_STATUSES,
+  reversePostSchema,
+  reverseInquirySchema,
+  reverseInquiryActionSchema,
 };

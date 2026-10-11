@@ -50,7 +50,7 @@ export async function getCurrentUser() {
     } catch {
       // Network error: retry.
     }
-    await new Promise(r => setTimeout(r, 600 * (attempt + 1)));
+    await new Promise((r) => setTimeout(r, 600 * (attempt + 1)));
   }
   return null;
 }

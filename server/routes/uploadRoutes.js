@@ -2,15 +2,36 @@ import express from "express";
 import multer from "multer";
 import fs from "fs";
 import path from "path";
-import { PDFParse } from "pdf-parse";
 import mammoth from "mammoth";
 import { protect } from "../middleware/authMiddleware.js";
-import { matchSkills, ALL_SKILLS as ALL_SKILLS_LOCAL } from "../services/skillDatabase.js";
+import {
+  matchSkills,
+  ALL_SKILLS as ALL_SKILLS_LOCAL,
+  SKILL_DATABASE,
+} from "../services/skillDatabase.js";
+
+// PDF parsing is loaded lazily so running the server's unit tests (`npm test`)
+// never pulls the pdfjs runtime into the process before a PDF is actually needed.
+// The test runner evaluates file top-level import statements before any test,
+// and pdfjs-dist's legacy build has runtime web-api deps (DOMMatrix etc.) that
+// throw in Node's test execution model even when the import is never consumed.
+let createPDFParser;
+async function getPDFParser() {
+  if (!createPDFParser) {
+    const { PDFParse } = await import("pdf-parse");
+    createPDFParser = (opts) => new PDFParse(opts);
+  }
+  return createPDFParser;
+}
 
 const router = express.Router();
 
 const ALLOWED_EXTENSIONS = [".pdf", ".docx", ".txt"];
-const ALLOWED_MIMES = ["application/pdf", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "text/plain"];
+const ALLOWED_MIMES = [
+  "application/pdf",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "text/plain",
+];
 
 const upload = multer({
   dest: "uploads/",
@@ -22,7 +43,11 @@ const upload = multer({
     if (!ALLOWED_EXTENSIONS.includes(ext)) {
       return cb(new Error("Only PDF, DOCX, or TXT files are allowed."));
     }
-    if (file.mimetype && !ALLOWED_MIMES.includes(file.mimetype) && file.mimetype !== "application/octet-stream") {
+    if (
+      file.mimetype &&
+      !ALLOWED_MIMES.includes(file.mimetype) &&
+      file.mimetype !== "application/octet-stream"
+    ) {
       return cb(new Error("File type not allowed."));
     }
     cb(null, true);
@@ -34,13 +59,34 @@ const upload = multer({
 // imported above; the local database and matcher were removed.
 
 const SECTION_RULES = [
-  { key: "objective", re: /^(objective|professional summary|career objective|career summary|profile|summary)\s*:?$/i },
-  { key: "experience", re: /^(experience summary|professional experience|work experience|employment summary|employment|area of experience|areas of experience)\s*:?$/i },
-  { key: "skills", re: /^(skills?|skill sets?|technical skills|key skills|core competencies|areas of expertise)\s*:?$/i },
-  { key: "education", re: /^(education|qualifications?|academic qualifications?|academic details|academic profile)\s*:?$/i },
-  { key: "projects", re: /^(projects?|key projects|major projects|academic projects|work projects|major projects and roles)\s*:?$/i },
-  { key: "certifications", re: /^(certifications?|certificates?|professional certifications?|licenses?)\s*:?$/i },
-  { key: "personal", re: /^(personal details?|personal profile|personal information|additional details)\s*:?$/i },
+  {
+    key: "objective",
+    re: /^(objective|professional summary|career objective|career summary|profile|summary)\s*:?$/i,
+  },
+  {
+    key: "experience",
+    re: /^(experience summary|professional experience|work experience|employment summary|employment|area of experience|areas of experience)\s*:?$/i,
+  },
+  {
+    key: "skills",
+    re: /^(skills?|skill sets?|technical skills|key skills|core competencies|areas of expertise)\s*:?$/i,
+  },
+  {
+    key: "education",
+    re: /^(education|qualifications?|academic qualifications?|academic details|academic profile)\s*:?$/i,
+  },
+  {
+    key: "projects",
+    re: /^(projects?|key projects|major projects|academic projects|work projects|major projects and roles)\s*:?$/i,
+  },
+  {
+    key: "certifications",
+    re: /^(certifications?|certificates?|professional certifications?|licenses?)\s*:?$/i,
+  },
+  {
+    key: "personal",
+    re: /^(personal details?|personal profile|personal information|additional details)\s*:?$/i,
+  },
 ];
 
 function splitSections(text) {
@@ -63,23 +109,34 @@ function splitSections(text) {
 }
 
 function extractCompanies(lines) {
-  return (lines || []).filter((line) =>
-    /(worked|working)\s+(with|at)\s+.+?(from|since|till|until|–|\d{4})/i.test(line) ||
-    /(\b\d{4}\b.*(from|to|–|until|since))|(from|since).*\b\d{4}\b/i.test(line) && /(ltd|limited|pvt|inc|technologies|services|solutions|infra|tele|hcl|tech mahindra|pspl|niscom|indiabulls)/i.test(line)
+  return (lines || []).filter(
+    (line) =>
+      /(worked|working)\s+(with|at)\s+.+?(from|since|till|until|–|\d{4})/i.test(line) ||
+      (/(\b\d{4}\b.*(from|to|–|until|since))|(from|since).*\b\d{4}\b/i.test(line) &&
+        /(ltd|limited|pvt|inc|technologies|services|solutions|infra|tele|hcl|tech mahindra|pspl|niscom|indiabulls)/i.test(
+          line,
+        )),
   );
 }
 
 function extractEducation(lines) {
-  const degreeRe = /(10th|10\+2|12th|b\.?tech|m\.?tech|b\.?sc|m\.?sc|bca|mca|mba|mbbs|phd|bachelor|master|diploma|graduate|post.?graduate|b\.?e|m\.?e|ssc|hsc|intermediate)/i;
+  const degreeRe =
+    /(10th|10\+2|12th|b\.?tech|m\.?tech|b\.?sc|m\.?sc|bca|mca|mba|mbbs|phd|bachelor|master|diploma|graduate|post.?graduate|b\.?e|m\.?e|ssc|hsc|intermediate)/i;
   const rows = (lines || []).filter((line) => {
-    if (/^(standard\/degree|collage\/university|college\/university|degree\s*\|)/i.test(line)) return false;
+    if (/^(standard\/degree|collage\/university|college\/university|degree\s*\|)/i.test(line))
+      return false;
     return degreeRe.test(line) || (line.includes("|") && /(\d{4}|%)/.test(line));
   });
   return rows.join("\n") || (lines || [])[0] || "";
 }
 
 function extractProjects(lines) {
-  const normTitle = (s) => s.replace(/^[\s.\-–]+/, "").replace(/[.\s]+$/, "").trim().toLowerCase();
+  const normTitle = (s) =>
+    s
+      .replace(/^[\s.\-–]+/, "")
+      .replace(/[.\s]+$/, "")
+      .trim()
+      .toLowerCase();
   const blocks = [];
   let current = null;
   for (const line of lines || []) {
@@ -149,7 +206,8 @@ function formatProjects(blocks) {
 }
 
 function extractPersonalDetails(lines) {
-  const keyRe = /^(father'?s\s*name|date\s*of\s*birth|dob|hobbies|present\s*address|address|languages\s*(known)?|passport(\s*(no|number))?|nric(\/fin\s*no)?|marital\s*status|nationality|gender|age)\s*[:.]?\s*(.+)$/i;
+  const keyRe =
+    /^(father'?s\s*name|date\s*of\s*birth|dob|hobbies|present\s*address|address|languages\s*(known)?|passport(\s*(no|number))?|nric(\/fin\s*no)?|marital\s*status|nationality|gender|age)\s*[:.]?\s*(.+)$/i;
   const pairs = [];
   for (const line of lines || []) {
     const m = line.match(keyRe);
@@ -166,9 +224,13 @@ function extractPersonalDetails(lines) {
 function suggestImprovements(f) {
   const tips = [];
   if (!f.summary || f.summary.length < 40)
-    tips.push("Add a professional summary (2–3 lines) at the top so recruiters understand your profile instantly.");
+    tips.push(
+      "Add a professional summary (2–3 lines) at the top so recruiters understand your profile instantly.",
+    );
   if (!f.projects)
-    tips.push("Add your major projects with client, period, product, and your role & responsibilities.");
+    tips.push(
+      "Add your major projects with client, period, product, and your role & responsibilities.",
+    );
   if (f.skillsList.length < 5)
     tips.push("Add more skills — aim for 8–15 relevant keywords so ATS filters match your resume.");
   if (!f.certifications)
@@ -176,13 +238,21 @@ function suggestImprovements(f) {
   if (!f.experienceCompanies.length)
     tips.push("List each employer with the period you worked there (from – to), newest first.");
   if (!/%/.test(f.experience) && !/\d+%/.test(f.experience))
-    tips.push("Quantify achievements — add metrics like % improvements, uptime, team size, and database counts.");
+    tips.push(
+      "Quantify achievements — add metrics like % improvements, uptime, team size, and database counts.",
+    );
   if ((f.experience.split("\n").filter(Boolean).length || 0) > 30)
-    tips.push("Your experience section is very long — keep the most relevant 8–12 points per role for ATS readability.");
+    tips.push(
+      "Your experience section is very long — keep the most relevant 8–12 points per role for ATS readability.",
+    );
   if (!f.personalDetails)
-    tips.push("Add personal details (address, languages, passport, etc.) if the role requires them.");
+    tips.push(
+      "Add personal details (address, languages, passport, etc.) if the role requires them.",
+    );
   if (tips.length === 0)
-    tips.push("Resume looks complete! Tailor the summary and skills to each job description before applying.");
+    tips.push(
+      "Resume looks complete! Tailor the summary and skills to each job description before applying.",
+    );
   return tips;
 }
 
@@ -197,13 +267,14 @@ function suggestTemplates(f) {
 
 // pdf-parse inserts page separators like "-- 1 of 4 --" into the extracted
 // text; they must never leak into experience/education fields.
-const PDF_PAGE_MARKER_RE =
-  /^\s*[-–—]+\s*\d+\s*(of|\/)\s*\d+\s*[-–—]+\s*$/i;
-const PDF_PAGE_NO_RE =
-  /^\s*page\s+\d+\s*(of|\/)\s+\d+\s*$/i;
+const PDF_PAGE_MARKER_RE = /^\s*[-–—]+\s*\d+\s*(of|\/)\s*\d+\s*[-–—]+\s*$/i;
+const PDF_PAGE_NO_RE = /^\s*page\s+\d+\s*(of|\/)\s+\d+\s*$/i;
 
 function cleanPdfText(text) {
-  const lines = text.split("\n").map((l) => l.trim()).filter(Boolean);
+  const lines = text
+    .split("\n")
+    .map((l) => l.trim())
+    .filter(Boolean);
   const counts = new Map();
   for (const line of lines) {
     counts.set(line, (counts.get(line) || 0) + 1);
@@ -216,10 +287,10 @@ function cleanPdfText(text) {
     if (c > 2) return false;
     // Drop very short lines that look like page numbers or stray markers
     if (line.length < 6) {
-      if (/^\d+$/.test(line)) return false;          // "1", "2" ...
+      if (/^\d+$/.test(line)) return false; // "1", "2" ...
       if (/^\s*-\s*\d+\s*-\s*$/.test(line)) return false; // "- 3 -"
-      if (/^page\s*\d+/i.test(line)) return false;   // "Page 5"
-      if (/^pg\.?\s*\d+/i.test(line)) return false;  // "Pg 5"
+      if (/^page\s*\d+/i.test(line)) return false; // "Page 5"
+      if (/^pg\.?\s*\d+/i.test(line)) return false; // "Pg 5"
     }
     return true;
   });
@@ -229,7 +300,10 @@ function cleanPdfText(text) {
   const surviving = cleaned.filter((line) => {
     if (counts.get(line) > 1 && line.length < 20) {
       // keep if it looks like meaningful content (has a @ or is a skill-ish line)
-      if (!line.includes("@") && !ALL_SKILLS_LOCAL.some((s) => line.toLowerCase().includes(s.toLowerCase()))) {
+      if (
+        !line.includes("@") &&
+        !ALL_SKILLS_LOCAL.some((s) => line.toLowerCase().includes(s.toLowerCase()))
+      ) {
         return false;
       }
     }
@@ -238,16 +312,190 @@ function cleanPdfText(text) {
   return surviving.join("\n");
 }
 
+// ── Improvised Extraction Helpers ─────────────────────────────────────
+
+export function extractLinks(text) {
+  const links = {
+    linkedin: "",
+    github: "",
+    leetcode: "",
+    portfolio: "",
+    others: [],
+  };
+
+  const linkedinMatch = text.match(
+    /(?:https?:\/\/)?(?:www\.)?(linkedin\.com\/in\/[a-zA-Z0-9_-]+)/i,
+  );
+  if (linkedinMatch)
+    links.linkedin = linkedinMatch[0].startsWith("http")
+      ? linkedinMatch[0]
+      : `https://${linkedinMatch[0]}`;
+
+  const githubMatch = text.match(/(?:https?:\/\/)?(?:www\.)?(github\.com\/[a-zA-Z0-9_-]+)/i);
+  if (githubMatch)
+    links.github = githubMatch[0].startsWith("http") ? githubMatch[0] : `https://${githubMatch[0]}`;
+
+  const leetcodeMatch = text.match(
+    /(?:https?:\/\/)?(?:www\.)?(leetcode\.com\/[a-zA-Z0-9_-]+|hackerrank\.com\/[a-zA-Z0-9_-]+)/i,
+  );
+  if (leetcodeMatch)
+    links.leetcode = leetcodeMatch[0].startsWith("http")
+      ? leetcodeMatch[0]
+      : `https://${leetcodeMatch[0]}`;
+
+  const urlMatches = text.match(/https?:\/\/[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}(?:\/[^\s)"]*)?/gi) || [];
+  for (const url of urlMatches) {
+    if (/linkedin\.com|github\.com|leetcode\.com|hackerrank\.com/i.test(url)) continue;
+    if (!links.portfolio && !/schema\.org|w3\.org|adobe\.com/i.test(url)) {
+      links.portfolio = url;
+    } else if (!/schema\.org|w3\.org/i.test(url) && !links.others.includes(url)) {
+      links.others.push(url);
+    }
+  }
+
+  return links;
+}
+
+export function extractStructuredExperience(lines) {
+  const experiences = [];
+  let current = null;
+  const dateRe =
+    /(?:(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s+\d{4}|\d{1,2}\/\d{4}|\d{4})\s*(?:–|-|to|till|until)\s*(?:present|current|now|(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s+\d{4}|\d{1,2}\/\d{4}|\d{4})/i;
+
+  for (const line of lines || []) {
+    const isBullet = /^[•>\-–*]\s*/.test(line);
+    const hasDate = dateRe.test(line);
+    const hasRoleOrCompany =
+      /(?:at|@)\s+[A-Za-z0-9&., ]+/i.test(line) ||
+      /(?:engineer|developer|lead|manager|consultant|architect|specialist|analyst|intern|programmer|administrator)\b/i.test(
+        line,
+      );
+
+    if (!isBullet && (hasDate || hasRoleOrCompany)) {
+      if (current) experiences.push(current);
+      const dateMatch = line.match(dateRe);
+      const duration = dateMatch ? dateMatch[0].trim() : "";
+      const titleCompany = line.replace(dateRe, "").replace(/[()]/g, "").trim();
+      const parts = titleCompany.split(/\s+(?:at|@|-)\s+|\s*,\s*/i);
+      current = {
+        role: parts[0]?.trim() || titleCompany,
+        company: parts[1]?.trim() || "",
+        duration,
+        bullets: [],
+      };
+    } else if (current) {
+      const cleanBullet = line.replace(/^[•>\-–*\s]+/, "").trim();
+      if (cleanBullet) current.bullets.push(cleanBullet);
+    }
+  }
+  if (current) experiences.push(current);
+  return experiences;
+}
+
+export function extractStructuredEducation(lines) {
+  const degreeRe =
+    /(?:10th|10\+2|12th|b\.?tech|m\.?tech|b\.?sc|m\.?sc|bca|mca|mba|mbbs|phd|bachelor|master|diploma|graduate|post.?graduate|b\.?e|m\.?e|ssc|hsc|intermediate|b\.?com|m\.?com)/i;
+  const yearRe = /\b(19\d{2}|20\d{2})\b(?:\s*[-–]\s*(?:19\d{2}|20\d{2}|present))?/i;
+  const scoreRe = /(?:cgpa|gpa|percentage|%)\s*[:=]?\s*(\d+(?:\.\d+)?%?)/i;
+
+  return (lines || [])
+    .filter((l) => degreeRe.test(l))
+    .map((l) => {
+      const degreeMatch = l.match(degreeRe);
+      const yearMatch = l.match(yearRe);
+      const scoreMatch = l.match(scoreRe);
+      return {
+        degree: degreeMatch ? degreeMatch[0] : "Degree",
+        raw: l.trim(),
+        year: yearMatch ? yearMatch[0] : "",
+        score: scoreMatch ? scoreMatch[1] : "",
+      };
+    });
+}
+
+export function categorizeSkills(skillsList) {
+  const categorized = {
+    programming: [],
+    web: [],
+    cloudDevops: [],
+    databases: [],
+    dataAi: [],
+    toolsOther: [],
+  };
+  const lowerMap = new Map();
+  for (const [cat, list] of Object.entries(SKILL_DATABASE)) {
+    for (const item of list) {
+      lowerMap.set(item.toLowerCase(), cat);
+    }
+  }
+
+  for (const skill of skillsList || []) {
+    const s = skill.toLowerCase();
+    const cat = lowerMap.get(s);
+    if (cat === "programming") categorized.programming.push(skill);
+    else if (cat === "web") categorized.web.push(skill);
+    else if (cat === "cloud" || cat === "devops") categorized.cloudDevops.push(skill);
+    else if (cat === "databases" || cat === "dba") categorized.databases.push(skill);
+    else if (cat === "ai" || cat === "data") categorized.dataAi.push(skill);
+    else categorized.toolsOther.push(skill);
+  }
+  return categorized;
+}
+
+export function computeCompletenessScore(fields) {
+  let score = 0;
+  const checklist = [];
+
+  if (fields.name) {
+    score += 10;
+    checklist.push({ label: "Full name detected", complete: true });
+  } else checklist.push({ label: "Name missing", complete: false });
+
+  if (fields.email && fields.phone) {
+    score += 15;
+    checklist.push({ label: "Contact info (email & phone)", complete: true });
+  } else checklist.push({ label: "Contact info incomplete", complete: false });
+
+  if (fields.summary && fields.summary.length >= 40) {
+    score += 15;
+    checklist.push({ label: "Professional summary", complete: true });
+  } else checklist.push({ label: "Summary too short or missing", complete: false });
+
+  if (fields.skillsList && fields.skillsList.length >= 5) {
+    score += 20;
+    checklist.push({ label: `${fields.skillsList.length} skills identified`, complete: true });
+  } else checklist.push({ label: "Fewer than 5 skills detected", complete: false });
+
+  if (fields.experience && fields.experience.length > 50) {
+    score += 20;
+    checklist.push({ label: "Work experience section", complete: true });
+  } else checklist.push({ label: "Work experience sparse or missing", complete: false });
+
+  if (fields.education) {
+    score += 10;
+    checklist.push({ label: "Education section", complete: true });
+  } else checklist.push({ label: "Education missing", complete: false });
+
+  if (fields.links?.linkedin || fields.links?.github) {
+    score += 10;
+    checklist.push({ label: "Professional links attached", complete: true });
+  } else checklist.push({ label: "No LinkedIn/GitHub links found", complete: false });
+
+  return { score: Math.min(100, score), checklist };
+}
+
 export function extractFields(text) {
   // Email — broad match
-  const email =
-    text.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/)?.[0] || "";
+  const email = text.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/)?.[0] || "";
 
   // Phone — Indian + international
   const phone =
     text.match(/(\+\d{1,3}[\s-]?)?\(?\d{2,4}\)?[\s.-]?\d{3,4}[\s.-]?\d{3,4}/)?.[0] || "";
 
-  const lines = text.split("\n").map((l) => l.trim()).filter(Boolean);
+  const lines = text
+    .split("\n")
+    .map((l) => l.trim())
+    .filter(Boolean);
 
   // Name — first non-empty line that looks like a name (2-5 words, no digits),
   // falling back to a clean capitalized two-word line anywhere in the document.
@@ -260,7 +508,9 @@ export function extractFields(text) {
         !/\d/.test(l) &&
         l.length < 60 &&
         !/@/.test(l) &&
-        !/^(email|phone|objective|summary|skills?|education|experience|projects?|certification|address)/i.test(l)
+        !/^(email|phone|objective|summary|skills?|education|experience|projects?|certification|address)/i.test(
+          l,
+        )
       );
     }) ||
     lines.find((l) => /^[A-Z][a-z]+(\s[A-Z][a-z]+){1,3}$/.test(l)) ||
@@ -304,22 +554,33 @@ export function extractFields(text) {
     ? addressLine.replace(/^present\s*address\s*[:.]?\s*/i, "").trim()
     : lines.find(
         (l) =>
-          /(singapore|india|united states|usa|uk|united kingdom|canada|germany|australia|dubai|uae|bangalore|mumbai|delhi|hyderabad|pune)/i.test(l) &&
+          /(singapore|india|united states|usa|uk|united kingdom|canada|germany|australia|dubai|uae|bangalore|mumbai|delhi|hyderabad|pune)/i.test(
+            l,
+          ) &&
           /\d/.test(l) &&
           l.length > 12 &&
-          !/@/.test(l)
+          !/@/.test(l),
       ) || "";
+
+  const links = extractLinks(text);
+  const structuredExperience = extractStructuredExperience(experienceLines);
+  const structuredEducation = extractStructuredEducation(sections.education || []);
+  const skillsByCategory = categorizeSkills(skillsList);
 
   const fields = {
     name,
     email,
     phone,
     location,
+    links,
     summary,
     education,
+    structuredEducation,
     skills,
     skillsList,
+    skillsByCategory,
     experience,
+    structuredExperience,
     experienceCompanies,
     projects,
     certifications,
@@ -328,6 +589,7 @@ export function extractFields(text) {
 
   fields.improvements = suggestImprovements(fields);
   fields.suggestedTemplates = suggestTemplates(fields);
+  fields.audit = computeCompletenessScore(fields);
 
   return fields;
 }
@@ -360,7 +622,8 @@ router.post("/resume", protect, upload.single("resume"), async (req, res) => {
     let text = "";
 
     if (ext === ".pdf") {
-      const parser = new PDFParse({ data: buffer, verbosity: 0 });
+      const Parser = await getPDFParser();
+      const parser = Parser({ data: buffer, verbosity: 0 });
       const parsed = await parser.getText();
       text = cleanPdfText(parsed.text || "");
     } else if (ext === ".docx") {
@@ -376,7 +639,9 @@ router.post("/resume", protect, upload.single("resume"), async (req, res) => {
     }
 
     // Clean up uploaded file immediately
-    try { fs.unlinkSync(filePath); } catch {}
+    try {
+      fs.unlinkSync(filePath);
+    } catch {}
 
     res.json({
       ok: true,
@@ -385,7 +650,10 @@ router.post("/resume", protect, upload.single("resume"), async (req, res) => {
     });
   } catch (err) {
     // Always clean up temp file on error
-    if (filePath) try { fs.unlinkSync(filePath); } catch {}
+    if (filePath)
+      try {
+        fs.unlinkSync(filePath);
+      } catch {}
     res.json({ ok: false, message: err.message });
   }
 });

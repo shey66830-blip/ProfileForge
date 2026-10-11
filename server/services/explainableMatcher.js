@@ -15,7 +15,8 @@ import jobMatchingEngine from "./jobMatchingEngine.js";
  * Preferred: "nice to have", "preferred", "bonus", "plus", "advantageous"
  */
 const REQUIRED_PATTERNS = /\b(?:must\s*have|required|essential|mandatory|minimum|core|key)\b/i;
-const PREFERRED_PATTERNS = /\b(?:nice\s*to\s*have|preferred|bonus|plus|advantageous|desirable|optional)\b/i;
+const PREFERRED_PATTERNS =
+  /\b(?:nice\s*to\s*have|preferred|bonus|plus|advantageous|desirable|optional)\b/i;
 
 /**
  * Classify skills from a job description into required and preferred.
@@ -119,7 +120,10 @@ export function findSkillEvidence(skill, resume = {}) {
     for (const cert of certs) {
       const name = (typeof cert === "string" ? cert : cert.name || "").toLowerCase();
       if (name.includes(skillLower)) {
-        return { section: "certifications", text: typeof cert === "string" ? cert : cert.name || "" };
+        return {
+          section: "certifications",
+          text: typeof cert === "string" ? cert : cert.name || "",
+        };
       }
     }
   }
@@ -148,8 +152,8 @@ export function findSkillEvidence(skill, resume = {}) {
 export const SCORE_WEIGHTS = {
   skills: 0.35,
   experience: 0.25,
-  education: 0.20,
-  eligibility: 0.10,
+  education: 0.2,
+  eligibility: 0.1,
   location: 0.05,
   ats: 0.05,
 };
@@ -189,7 +193,9 @@ export function explainableMatch({ resume = {}, job = {}, ats = {} }) {
   const { required, preferred } = classifySkills(job.skills || [], job.description || "");
 
   // Match required and preferred skills separately
-  const resumeSkills = (resume.skills || []).map((s) => (typeof s === "string" ? s : s.name || "").toLowerCase());
+  const resumeSkills = (resume.skills || []).map((s) =>
+    (typeof s === "string" ? s : s.name || "").toLowerCase(),
+  );
   const matchedRequired = required.filter((s) => resumeSkills.includes(s.toLowerCase()));
   const missingRequired = required.filter((s) => !resumeSkills.includes(s.toLowerCase()));
   const matchedPreferred = preferred.filter((s) => resumeSkills.includes(s.toLowerCase()));
@@ -245,11 +251,11 @@ export function explainableMatch({ resume = {}, job = {}, ats = {} }) {
   // Deterministic overall score (recompute from components for transparency)
   const overall = Math.round(
     scoreComponents.skills.score * SCORE_WEIGHTS.skills +
-    scoreComponents.experience.score * SCORE_WEIGHTS.experience +
-    scoreComponents.education.score * SCORE_WEIGHTS.education +
-    scoreComponents.eligibility.score * SCORE_WEIGHTS.eligibility +
-    scoreComponents.location.score * SCORE_WEIGHTS.location +
-    scoreComponents.ats.score * SCORE_WEIGHTS.ats
+      scoreComponents.experience.score * SCORE_WEIGHTS.experience +
+      scoreComponents.education.score * SCORE_WEIGHTS.education +
+      scoreComponents.eligibility.score * SCORE_WEIGHTS.eligibility +
+      scoreComponents.location.score * SCORE_WEIGHTS.location +
+      scoreComponents.ats.score * SCORE_WEIGHTS.ats,
   );
 
   // Apply the same disqualifier caps as the base engine

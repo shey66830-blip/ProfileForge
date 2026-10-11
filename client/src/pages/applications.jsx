@@ -6,20 +6,27 @@ import { useToast } from "../context/ToastContext.jsx";
 /* ── API helpers (inline to avoid breaking existing service) ───── */
 async function api(path, opts = {}) {
   try {
-    const res = await fetch(`${API_BASE}${path}`, { credentials: "include", headers: { "Content-Type": "application/json" }, ...opts });
+    const res = await fetch(`${API_BASE}${path}`, {
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      ...opts,
+    });
     return await res.json();
-  } catch { return { ok: false, message: "Backend not reachable." }; }
+  } catch {
+    return { ok: false, message: "Backend not reachable." };
+  }
 }
 
 const getApps = (groupBy) => api(`/applications${groupBy ? `?groupBy=${groupBy}` : ""}`);
-const updateApp = (id, data) => api(`/applications/${id}`, { method: "PUT", body: JSON.stringify(data) });
+const updateApp = (id, data) =>
+  api(`/applications/${id}`, { method: "PUT", body: JSON.stringify(data) });
 const deleteApp = (id) => api(`/applications/${id}`, { method: "DELETE" });
 const getTransitions = (status) => api(`/applications/transitions/${status}`);
 
 /* ── Status config ─────────────────────────────────────────────── */
 const STATUSES = [
   { key: "saved", label: "Saved", color: "#666", icon: "♡" },
-  { key: "preparing", label: "Preparing", color: "#8b5cf6", icon: "📝" },
+  { key: "preparing", label: "Preparing", color: "#0d9488", icon: "📝" },
   { key: "applied", label: "Applied", color: "#3b82f6", icon: "✉" },
   { key: "screening", label: "Screening", color: "#06b6d4", icon: "🔎" },
   { key: "interview", label: "Interview", color: "#f59e0b", icon: "🕐" },
@@ -47,7 +54,10 @@ function TransitionButtons({ appId, currentStatus, onTransition }) {
   const [open, setOpen] = useState(false);
 
   async function loadOptions() {
-    if (open) { setOpen(false); return; }
+    if (open) {
+      setOpen(false);
+      return;
+    }
     setLoading(true);
     const res = await getTransitions(currentStatus);
     setLoading(false);
@@ -64,17 +74,53 @@ function TransitionButtons({ appId, currentStatus, onTransition }) {
 
   return (
     <div style={{ position: "relative" }}>
-      <button className="ghost-btn small" onClick={loadOptions} disabled={loading} style={{ fontSize: 11, padding: "3px 8px" }}>
+      <button
+        className="ghost-btn small"
+        onClick={loadOptions}
+        disabled={loading}
+        style={{ fontSize: 11, padding: "3px 8px" }}
+      >
         {loading ? "…" : "→ Move"}
       </button>
       {open && options.length > 0 && (
-        <div style={{ position: "absolute", top: "100%", right: 0, zIndex: 50, marginTop: 4, minWidth: 140, padding: 4, borderRadius: 10, background: "rgba(20,20,45,0.95)", backdropFilter: "blur(20px)", border: "1px solid var(--glass-border)", boxShadow: "0 12px 32px rgba(0,0,0,0.4)" }}>
+        <div
+          style={{
+            position: "absolute",
+            top: "100%",
+            right: 0,
+            zIndex: 50,
+            marginTop: 4,
+            minWidth: 140,
+            padding: 4,
+            borderRadius: 10,
+            background: "rgba(20,20,45,0.95)",
+            backdropFilter: "blur(20px)",
+            border: "1px solid var(--glass-border)",
+            boxShadow: "0 12px 32px rgba(0,0,0,0.4)",
+          }}
+        >
           {options.map((s) => {
             const cfg = STATUSES.find((st) => st.key === s);
             return (
-              <button key={s} onClick={() => doTransition(s)} style={{ display: "block", width: "100%", padding: "6px 10px", border: "none", background: "none", color: cfg?.color || "var(--text-primary)", fontSize: 12, fontWeight: 600, textAlign: "left", borderRadius: 6, cursor: "pointer" }}
-                onMouseEnter={(e) => e.target.style.background = "rgba(108,92,231,0.12)"}
-                onMouseLeave={(e) => e.target.style.background = "none"}>
+              <button
+                key={s}
+                onClick={() => doTransition(s)}
+                style={{
+                  display: "block",
+                  width: "100%",
+                  padding: "6px 10px",
+                  border: "none",
+                  background: "none",
+                  color: cfg?.color || "var(--text-primary)",
+                  fontSize: 12,
+                  fontWeight: 600,
+                  textAlign: "left",
+                  borderRadius: 6,
+                  cursor: "pointer",
+                }}
+                onMouseEnter={(e) => (e.target.style.background = "rgba(13,148,136,0.12)")}
+                onMouseLeave={(e) => (e.target.style.background = "none")}
+              >
                 {cfg?.icon} {cfg?.label || s}
               </button>
             );
@@ -101,39 +147,99 @@ function AppCard({ app, onTransition, onDelete }) {
     <div className="app-card" style={{ marginBottom: 8 }}>
       <div className="app-card-top">
         <strong>{app.jobTitle || snap.title || "Untitled"}</strong>
-        <button className="app-delete" onClick={() => onDelete(app._id)} title="Remove">✕</button>
+        <button className="app-delete" onClick={() => onDelete(app._id)} title="Remove">
+          ✕
+        </button>
       </div>
       <p className="app-company">{app.company || snap.company || "Unknown"}</p>
 
       {/* Job snapshot details */}
       {(snap.location || snap.workMode || snap.salary) && (
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap", margin: "4px 0" }}>
-          {snap.location && <span style={{ fontSize: 10, padding: "2px 6px", borderRadius: 999, background: "rgba(255,255,255,0.05)" }}>📍 {snap.location}</span>}
-          {snap.workMode && <span style={{ fontSize: 10, padding: "2px 6px", borderRadius: 999, background: "rgba(255,255,255,0.05)" }}>🏠 {snap.workMode}</span>}
-          {snap.salary && <span style={{ fontSize: 10, padding: "2px 6px", borderRadius: 999, background: "rgba(34,197,94,0.1)", color: "#22c55e" }}>💰 {snap.salary}</span>}
+          {snap.location && (
+            <span
+              style={{
+                fontSize: 10,
+                padding: "2px 6px",
+                borderRadius: 999,
+                background: "rgba(255,255,255,0.05)",
+              }}
+            >
+              📍 {snap.location}
+            </span>
+          )}
+          {snap.workMode && (
+            <span
+              style={{
+                fontSize: 10,
+                padding: "2px 6px",
+                borderRadius: 999,
+                background: "rgba(255,255,255,0.05)",
+              }}
+            >
+              🏠 {snap.workMode}
+            </span>
+          )}
+          {snap.salary && (
+            <span
+              style={{
+                fontSize: 10,
+                padding: "2px 6px",
+                borderRadius: 999,
+                background: "rgba(34,197,94,0.1)",
+                color: "#22c55e",
+              }}
+            >
+              💰 {snap.salary}
+            </span>
+          )}
         </div>
       )}
 
       {/* Next action */}
       {app.nextAction && (
-        <div style={{ fontSize: 11, padding: "4px 8px", borderRadius: 6, background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.15)", margin: "4px 0" }}>
+        <div
+          style={{
+            fontSize: 11,
+            padding: "4px 8px",
+            borderRadius: 6,
+            background: "rgba(245,158,11,0.08)",
+            border: "1px solid rgba(245,158,11,0.15)",
+            margin: "4px 0",
+          }}
+        >
           📋 {app.nextAction}
         </div>
       )}
 
       {/* Follow-up date */}
       {app.followUpAt && (
-        <p style={{ margin: "2px 0", fontSize: 10, color: "var(--text-muted)" }}>⏰ Follow up: {new Date(app.followUpAt).toLocaleDateString()}</p>
+        <p style={{ margin: "2px 0", fontSize: 10, color: "var(--text-muted)" }}>
+          ⏰ Follow up: {new Date(app.followUpAt).toLocaleDateString()}
+        </p>
       )}
 
       {/* Timestamps */}
-      <div style={{ display: "flex", gap: 8, margin: "4px 0", fontSize: 10, color: "var(--text-muted)" }}>
+      <div
+        style={{
+          display: "flex",
+          gap: 8,
+          margin: "4px 0",
+          fontSize: 10,
+          color: "var(--text-muted)",
+        }}
+      >
         {app.submittedAt && <span>Submitted {timeAgo(app.submittedAt)}</span>}
         {!app.submittedAt && <span>{timeAgo(app.updatedAt || app.createdAt)}</span>}
       </div>
 
       {/* Notes */}
-      <input className="app-notes" placeholder="Add notes…" value={notes} onChange={(e) => saveNotes(e.target.value)} />
+      <input
+        className="app-notes"
+        placeholder="Add notes…"
+        value={notes}
+        onChange={(e) => saveNotes(e.target.value)}
+      />
 
       {/* Actions */}
       <div style={{ display: "flex", gap: 4, marginTop: 4 }}>
@@ -152,7 +258,9 @@ export default function Applications() {
   const [dragId, setDragId] = useState(null);
   const [viewMode, setViewMode] = useState("kanban");
 
-  useEffect(() => { loadApps(); }, []);
+  useEffect(() => {
+    loadApps();
+  }, []);
 
   async function loadApps() {
     setLoading(true);
@@ -163,11 +271,14 @@ export default function Applications() {
   }
 
   function handleTransition(id, newStatus) {
-    setApps((prev) => prev.map((a) => a._id === id ? { ...a, status: newStatus } : a));
+    setApps((prev) => prev.map((a) => (a._id === id ? { ...a, status: newStatus } : a)));
     // Rebuild grouped
-    const updated = apps.map((a) => a._id === id ? { ...a, status: newStatus } : a);
+    const updated = apps.map((a) => (a._id === id ? { ...a, status: newStatus } : a));
     const g = {};
-    updated.forEach((a) => { if (!g[a.status]) g[a.status] = []; g[a.status].push(a); });
+    updated.forEach((a) => {
+      if (!g[a.status]) g[a.status] = [];
+      g[a.status].push(a);
+    });
     setGrouped(g);
     toast.showToast(`Moved to ${newStatus}`, "success");
   }
@@ -176,7 +287,12 @@ export default function Applications() {
     if (!window.confirm("Remove this application?")) return;
     setApps((prev) => prev.filter((a) => a._id !== id));
     const g = {};
-    apps.filter((a) => a._id !== id).forEach((a) => { if (!g[a.status]) g[a.status] = []; g[a.status].push(a); });
+    apps
+      .filter((a) => a._id !== id)
+      .forEach((a) => {
+        if (!g[a.status]) g[a.status] = [];
+        g[a.status].push(a);
+      });
     setGrouped(g);
     await deleteApp(id);
     toast.showToast("Removed", "info");
@@ -199,16 +315,37 @@ export default function Applications() {
       <section className="card">
         <p className="eyebrow">Application Tracker</p>
         <h1>My Applications</h1>
-        <p className="muted">{total} total · {active} active · {interviews} interviews · {offers} offers</p>
+        <p className="muted">
+          {total} total · {active} active · {interviews} interviews · {offers} offers
+        </p>
       </section>
 
       {/* View mode + stats */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: 14,
+        }}
+      >
         <div style={{ display: "flex", gap: 4 }}>
-          <button className={`mode-tab ${viewMode === "kanban" ? "active" : ""}`} onClick={() => setViewMode("kanban")}>Board</button>
-          <button className={`mode-tab ${viewMode === "list" ? "active" : ""}`} onClick={() => setViewMode("list")}>List</button>
+          <button
+            className={`mode-tab ${viewMode === "kanban" ? "active" : ""}`}
+            onClick={() => setViewMode("kanban")}
+          >
+            Board
+          </button>
+          <button
+            className={`mode-tab ${viewMode === "list" ? "active" : ""}`}
+            onClick={() => setViewMode("list")}
+          >
+            List
+          </button>
         </div>
-        <Link to="/jobs" className="ghost-btn small" style={{ textDecoration: "none" }}>+ Add from Jobs</Link>
+        <Link to="/jobs" className="ghost-btn small" style={{ textDecoration: "none" }}>
+          + Add from Jobs
+        </Link>
       </div>
 
       {loading ? (
@@ -220,14 +357,25 @@ export default function Applications() {
           <span style={{ fontSize: 40, display: "block", marginBottom: 12 }}>📋</span>
           <h3>No applications yet</h3>
           <p className="muted">Start applying from Job Search and track everything here.</p>
-          <Link to="/jobs" className="primary-btn" style={{ textDecoration: "none", display: "inline-block", marginTop: 12 }}>Go to Job Search</Link>
+          <Link
+            to="/jobs"
+            className="primary-btn"
+            style={{ textDecoration: "none", display: "inline-block", marginTop: 12 }}
+          >
+            Go to Job Search
+          </Link>
         </div>
       ) : viewMode === "kanban" ? (
         <div className="app-kanban">
           {STATUSES.map((col) => {
             const colApps = grouped[col.key] || [];
             return (
-              <div key={col.key} className="app-column" onDragOver={(e) => e.preventDefault()} onDrop={() => handleDrop(col.key)}>
+              <div
+                key={col.key}
+                className="app-column"
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={() => handleDrop(col.key)}
+              >
                 <div className="app-column-header" style={{ borderBottomColor: col.color + "44" }}>
                   <span className="app-column-icon">{col.icon}</span>
                   <strong style={{ color: col.color }}>{col.label}</strong>
@@ -251,15 +399,51 @@ export default function Applications() {
           {apps.map((app) => {
             const cfg = STATUSES.find((s) => s.key === app.status);
             return (
-              <div key={app._id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 14px", borderRadius: 10, background: "var(--bg-card)", border: "1px solid var(--glass-border)" }}>
+              <div
+                key={app._id}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 12,
+                  padding: "10px 14px",
+                  borderRadius: 10,
+                  background: "var(--bg-card)",
+                  border: "1px solid var(--glass-border)",
+                }}
+              >
                 <span style={{ fontSize: 16, flexShrink: 0 }}>{cfg?.icon || "•"}</span>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <strong style={{ fontSize: 13 }}>{app.jobTitle || "Untitled"}</strong>
-                  <span style={{ fontSize: 12, color: "var(--text-muted)", marginLeft: 8 }}>{app.company || ""}</span>
+                  <span style={{ fontSize: 12, color: "var(--text-muted)", marginLeft: 8 }}>
+                    {app.company || ""}
+                  </span>
                 </div>
-                <span style={{ fontSize: 11, padding: "2px 8px", borderRadius: 999, background: (cfg?.color || "#666") + "22", color: cfg?.color || "#666", fontWeight: 700, flexShrink: 0 }}>{cfg?.label || app.status}</span>
-                <TransitionButtons appId={app._id} currentStatus={app.status} onTransition={handleTransition} />
-                <button className="app-delete" onClick={() => handleDelete(app._id)} title="Remove" style={{ flexShrink: 0 }}>✕</button>
+                <span
+                  style={{
+                    fontSize: 11,
+                    padding: "2px 8px",
+                    borderRadius: 999,
+                    background: (cfg?.color || "#666") + "22",
+                    color: cfg?.color || "#666",
+                    fontWeight: 700,
+                    flexShrink: 0,
+                  }}
+                >
+                  {cfg?.label || app.status}
+                </span>
+                <TransitionButtons
+                  appId={app._id}
+                  currentStatus={app.status}
+                  onTransition={handleTransition}
+                />
+                <button
+                  className="app-delete"
+                  onClick={() => handleDelete(app._id)}
+                  title="Remove"
+                  style={{ flexShrink: 0 }}
+                >
+                  ✕
+                </button>
               </div>
             );
           })}

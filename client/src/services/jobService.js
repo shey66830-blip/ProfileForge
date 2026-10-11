@@ -1,7 +1,10 @@
 import { API_BASE } from "../config.js";
 
 function cleanHtml(html = "") {
-  return html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+  return html
+    .replace(/<[^>]*>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function extractEligibility(description = "") {
@@ -35,11 +38,7 @@ function extractEligibility(description = "") {
   return text.slice(index, index + 800);
 }
 
-export async function fetchJobs({
-  search = "",
-  category = "",
-  country = "all",
-}) {
+export async function fetchJobs({ search = "", category = "", country = "all" }) {
   try {
     const params = new URLSearchParams();
 
@@ -49,12 +48,9 @@ export async function fetchJobs({
 
     if (country) params.append("country", country);
 
-    const res = await fetch(
-      `${API_BASE}/jobs?${params.toString()}`,
-      {
-        credentials: "include",
-      }
-    );
+    const res = await fetch(`${API_BASE}/jobs?${params.toString()}`, {
+      credentials: "include",
+    });
 
     const data = await res.json();
 
@@ -63,24 +59,15 @@ export async function fetchJobs({
     const improvedJobs = (data.jobs || []).map((job) => ({
       ...job,
 
-      eligibility:
-        job.eligibility ||
-        extractEligibility(job.description || ""),
+      eligibility: job.eligibility || extractEligibility(job.description || ""),
 
-      description:
-        cleanHtml(job.description || ""),
+      description: cleanHtml(job.description || ""),
 
-      location:
-        job.location ||
-        "Location not clearly mentioned",
+      location: job.location || "Location not clearly mentioned",
 
-      salary:
-        job.salary ||
-        "Salary/Stipend not disclosed",
+      salary: job.salary || "Salary/Stipend not disclosed",
 
-      company:
-        job.company ||
-        "Unknown company",
+      company: job.company || "Unknown company",
     }));
 
     return {

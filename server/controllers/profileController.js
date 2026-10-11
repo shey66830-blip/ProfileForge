@@ -54,14 +54,22 @@ export const updateProfile = async (req, res) => {
     if (profile.status === "draft") {
       return res.json({
         ok: false,
-        message: "Profile is in draft status. Review and promote it first, or update via the import-review flow.",
+        message:
+          "Profile is in draft status. Review and promote it first, or update via the import-review flow.",
       });
     }
 
     // Apply section updates with user provenance
     const allowedSections = [
-      "contact", "summary", "skills", "experience",
-      "education", "projects", "certifications", "links", "jobPreferences",
+      "contact",
+      "summary",
+      "skills",
+      "experience",
+      "education",
+      "projects",
+      "certifications",
+      "links",
+      "jobPreferences",
     ];
 
     for (const section of allowedSections) {
@@ -111,8 +119,16 @@ export const updateProfile = async (req, res) => {
 export const importProfile = async (req, res) => {
   try {
     const {
-      documentId, contact, summary, skills,
-      experience, education, projects, certifications, links, jobPreferences,
+      documentId,
+      contact,
+      summary,
+      skills,
+      experience,
+      education,
+      projects,
+      certifications,
+      links,
+      jobPreferences,
     } = req.body;
 
     if (!documentId) {
@@ -200,7 +216,11 @@ export const importProfile = async (req, res) => {
       profile = await Profile.create(draftData);
     }
 
-    return res.json({ ok: true, profile, message: "Draft profile created. Review and promote to canonical when ready." });
+    return res.json({
+      ok: true,
+      profile,
+      message: "Draft profile created. Review and promote to canonical when ready.",
+    });
   } catch (err) {
     return res.json({ ok: false, message: err.message });
   }
@@ -222,12 +242,25 @@ export const promoteProfile = async (req, res) => {
     if (canonical) {
       // Merge draft into canonical — draft data fills empty canonical fields,
       // but verified canonical data is never overwritten.
-      for (const section of ["contact", "skills", "experience", "education", "projects", "certifications", "links", "jobPreferences"]) {
+      for (const section of [
+        "contact",
+        "skills",
+        "experience",
+        "education",
+        "projects",
+        "certifications",
+        "links",
+        "jobPreferences",
+      ]) {
         if (section === "contact" && profile.contact) {
-          if (!canonical.contact.name && profile.contact.name) canonical.contact.name = profile.contact.name;
-          if (!canonical.contact.email && profile.contact.email) canonical.contact.email = profile.contact.email;
-          if (!canonical.contact.phone && profile.contact.phone) canonical.contact.phone = profile.contact.phone;
-          if (!canonical.contact.location && profile.contact.location) canonical.contact.location = profile.contact.location;
+          if (!canonical.contact.name && profile.contact.name)
+            canonical.contact.name = profile.contact.name;
+          if (!canonical.contact.email && profile.contact.email)
+            canonical.contact.email = profile.contact.email;
+          if (!canonical.contact.phone && profile.contact.phone)
+            canonical.contact.phone = profile.contact.phone;
+          if (!canonical.contact.location && profile.contact.location)
+            canonical.contact.location = profile.contact.location;
         } else if (section === "skills" && profile.skills?.length) {
           const existingNames = new Set(canonical.skills.map((s) => s.name.toLowerCase()));
           for (const skill of profile.skills) {
@@ -262,7 +295,11 @@ export const promoteProfile = async (req, res) => {
       // Delete the draft
       await Profile.deleteOne({ _id: profile._id });
 
-      return res.json({ ok: true, profile: canonical, message: "Draft merged into canonical profile." });
+      return res.json({
+        ok: true,
+        profile: canonical,
+        message: "Draft merged into canonical profile.",
+      });
     }
 
     // No existing canonical — promote the draft directly
@@ -315,9 +352,7 @@ export const applySuggestion = async (req, res) => {
       return res.json({ ok: false, message: "Profile not found." });
     }
 
-    const idx = profile.suggestions.findIndex(
-      (s) => s._id.toString() === suggestionId
-    );
+    const idx = profile.suggestions.findIndex((s) => s._id.toString() === suggestionId);
     if (idx === -1) {
       return res.json({ ok: false, message: "Suggestion not found." });
     }
@@ -352,7 +387,7 @@ export const applySuggestion = async (req, res) => {
         const verifiedNames = new Set(
           (profile.skills || [])
             .filter((s) => s.provenance?.verified)
-            .map((s) => s.name.toLowerCase())
+            .map((s) => s.name.toLowerCase()),
         );
         for (const name of suggestion.suggestedValue) {
           if (!verifiedNames.has(name.toLowerCase())) {

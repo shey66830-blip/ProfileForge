@@ -59,7 +59,11 @@ const LONG_RESUME = Array.from({ length: 200 }, (_, i) => `Line ${i + 1} of the 
 describe("validateATS", () => {
   it("returns no warnings for a well-structured resume", () => {
     const result = validateATS(GOOD_RESUME);
-    assert.equal(result.warnings.length, 0, `Expected 0 warnings, got: ${JSON.stringify(result.warnings)}`);
+    assert.equal(
+      result.warnings.length,
+      0,
+      `Expected 0 warnings, got: ${JSON.stringify(result.warnings)}`,
+    );
   });
 
   it("detects sections in correct order", () => {
@@ -104,7 +108,8 @@ describe("validateATS", () => {
   });
 
   it("warns about missing dates", () => {
-    const text = "John Doe\njohn@example.com\n\nEXPERIENCE\nDeveloper at Company\nEDUCATION\nB.Tech";
+    const text =
+      "John Doe\njohn@example.com\n\nEXPERIENCE\nDeveloper at Company\nEDUCATION\nB.Tech";
     const result = validateATS(text);
     const dateWarning = result.warnings.find((w) => w.message.includes("dates"));
     assert.ok(dateWarning, "Should warn about missing dates");
@@ -136,7 +141,8 @@ describe("validateATS", () => {
   });
 
   it("warns about missing skills section", () => {
-    const text = "John Doe\njohn@example.com\n\nEXPERIENCE\nDeveloper (2020 - Present)\n\nEDUCATION\nB.Tech (2017)";
+    const text =
+      "John Doe\njohn@example.com\n\nEXPERIENCE\nDeveloper (2020 - Present)\n\nEDUCATION\nB.Tech (2017)";
     const result = validateATS(text);
     const skillWarning = result.warnings.find((w) => w.message.includes("skills"));
     assert.ok(skillWarning, "Should warn about missing skills section");
@@ -193,7 +199,8 @@ describe("generatePlainTextPreview", () => {
   });
 
   it("preserves content lines", () => {
-    const text = "John Doe\njohn@email.com\n\nEXPERIENCE\nDeveloper (2020 - Present)\n- Built things";
+    const text =
+      "John Doe\njohn@email.com\n\nEXPERIENCE\nDeveloper (2020 - Present)\n- Built things";
     const preview = generatePlainTextPreview(text);
     assert.ok(preview.includes("John Doe"));
     assert.ok(preview.includes("john@email.com"));

@@ -1,5 +1,10 @@
 import express from "express";
-import { saveJob, getSavedJobs, unsaveJob, checkJobSaved } from "../controllers/savedJobController.js";
+import {
+  saveJob,
+  getSavedJobs,
+  unsaveJob,
+  checkJobSaved,
+} from "../controllers/savedJobController.js";
 import { protect } from "../middleware/authMiddleware.js";
 
 const router = express.Router();

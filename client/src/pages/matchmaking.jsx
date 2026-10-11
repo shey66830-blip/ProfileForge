@@ -1,105 +1,163 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import PremiumGate from "../components/PremiumGate.jsx";
 import { AppContext } from "../App.jsx";
-import { getMarriageMatches } from "../utils/matchers.js";
+import { findMatches } from "../services/proApi.js";
+import { announce } from "../utils/announce.js";
 
-export default function Matchmaking({ documents, setPage }) {
+export default function Matchmaking({ documents }) {
   const { plan } = React.useContext(AppContext);
   const biodatas = documents.filter((doc) => doc.type === "biodata");
-  const [selectedId, setSelectedId] = useState(biodatas[0]?._id || "");
+  const [selectedId, setSelectedId] = useState("");
   const [scope, setScope] = useState("country");
   const [specificLocation, setSpecificLocation] = useState("");
-  const [chatTarget, setChatTarget] = useState(null);
-  const selectedDoc = biodatas.find((doc) => doc._id === selectedId);
-  const matches = selectedDoc ? getMarriageMatches(selectedDoc, { scope, specificLocation }) : [];
+  const [matches, setMatches] = useState(null); // null = not searched yet
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (!selectedId && biodatas.length > 0) setSelectedId(biodatas[0]._id);
+  }, [biodatas, selectedId]);
+
+  async function search() {
+    if (!selectedId) return;
+    setLoading(true);
+    setError("");
+    const res = await findMatches({ documentId: selectedId, scope, specificLocation });
+    setLoading(false);
+    if (!res.ok) {
+      setError(res.message || "Matching failed.");
+      setMatches([]);
+      return;
+    }
+    setMatches(res.matches || []);
+    announce(`${res.matches?.length || 0} matches found`);
+  }
 
   return (
-    <PremiumGate required="premium" currentPlan={plan} feature="Matchmaking allows you to find compatible biodata matches based on location and preferences.">
-    <main className="container">
-      <section className="card">
-        <p className="eyebrow">Marriage biodata matching</p>
-        <h1>Matchmaking</h1>
-        <p>Select a saved biodata and choose location preference.</p>
+    <PremiumGate
+      required="premium"
+      currentPlan={plan}
+      feature="Matchmaking finds compatible biodata matches from real profiles on the platform, scored on age, location, education, lifestyle, and family values."
+    >
+      <main className="container">
+        <section className="card">
+          <p className="eyebrow">Marriage biodata matching</p>
+          <h1>Matchmaking</h1>
+          <p>
+            Select your biodata and location preference — we score real biodatas on the platform
+            against yours.
+          </p>
 
-        {biodatas.length === 0 ? (
-          <div className="empty-state">
-            <h2>No biodatas found</h2>
-            <p>Pehle ek biodata bana lo, phir matching shuru kar sakte ho!</p>
-            <button className="primary-btn" onClick={() => setPage("dashboard")}>Go to Dashboard</button>
-          </div>
-        ) : (
-          <>
-            <select value={selectedId} onChange={(e) => setSelectedId(e.target.value)}>
-              {biodatas.map((doc) => (
-                <option value={doc.id} key={doc.id}>{doc.title}</option>
-              ))}
-            </select>
-            <div className="grid two">
-              <select value={scope} onChange={(e) => setScope(e.target.value)}>
-                <option value="city">Your city</option>
-                <option value="country">Your country</option>
-                <option value="abroad">Abroad</option>
-                <option value="both">Country + Abroad</option>
-                <option value="specific">Specific location</option>
-              </select>
-              <input placeholder="Specific city/country" value={specificLocation} onChange={(e) => setSpecificLocation(e.target.value)} />
+          {biodatas.length === 0 ? (
+            <div className="empty-state">
+              <h2>No biodatas found</h2>
+              <p>Create a biodata first (Premium), then matching will find compatible profiles.</p>
+              <button
+                className="primary-btn"
+                onClick={() => (window.location.href = "/builder/biodata")}
+              >
+                Create a Biodata
+              </button>
             </div>
-          </>
-        )}
-      </section>
+          ) : (
+            <>
+              <div className="grid two">
+                <select value={selectedId} onChange={(e) => setSelectedId(e.target.value)}>
+                  {biodatas.map((doc) => (
+                    <option value={doc._id} key={doc._id}>
+                      {doc.title}
+                    </option>
+                  ))}
+                </select>
+                <select value={scope} onChange={(e) => setScope(e.target.value)}>
+                  <option value="city">Your city</option>
+                  <option value="country">Your country</option>
+                  <option value="abroad">Abroad</option>
+                  <option value="both">Country + Abroad</option>
+                  <option value="specific">Specific location</option>
+                </select>
+              </div>
+              {scope === "specific" && (
+                <input
+                  placeholder="Specific city/country"
+                  value={specificLocation}
+                  onChange={(e) => setSpecificLocation(e.target.value)}
+                  style={{ marginTop: 10, width: "100%" }}
+                />
+              )}
+              <button
+                className="primary-btn"
+                style={{ marginTop: 12 }}
+                onClick={search}
+                disabled={loading || !selectedId}
+              >
+                {loading ? "Searching…" : "🔮 Find Matches"}
+              </button>
+            </>
+          )}
+        </section>
 
-      <section className="grid two">
-        {matches.length === 0 ? (
-          <div className="empty-state">
-            <h2>Koi match nahi mila</h2>
-            <p>Try changing location or scope — maybe koi match aage milega!</p>
-            <button className="ghost-btn" onClick={() => { setScope("country"); setSpecificLocation(""); }}>Reset Filters</button>
-          </div>
-        ) : (
-          matches.map((match) => (
-            <div className="card result-card" key={match.name}>
-              <p className="eyebrow">{match.score}% compatibility</p>
-              <h2>{match.name}</h2>
-              <p>{match.location}</p>
-              <p>{match.summary}</p>
-              <div>{match.tags.map((tag) => <span className="badge" key={tag}>{tag}</span>)}</div>
-              {match.details && (
-                <div style={{ marginTop: 12 }}>
+        {error && (
+          <section className="card">
+            <p style={{ color: "#ef4444" }}>{error}</p>
+          </section>
+        )}
+
+        <section className="grid two">
+          {matches === null ? (
+            <div className="empty-state">
+              <h2>Ready when you are</h2>
+              <p>Pick your biodata and hit Find Matches.</p>
+            </div>
+          ) : matches.length === 0 ? (
+            <div className="empty-state">
+              <h2>Koi match nahi mila</h2>
+              <p>No compatible biodatas yet — as more people join, matches appear here.</p>
+              <button
+                className="ghost-btn"
+                onClick={() => {
+                  setScope("country");
+                  setSpecificLocation("");
+                  setMatches(null);
+                }}
+              >
+                Reset Filters
+              </button>
+            </div>
+          ) : (
+            matches.map((m) => (
+              <div className="card result-card" key={m.documentId}>
+                <p className="eyebrow">{m.score}% compatibility</p>
+                <h2>{m.name}</h2>
+                <p className="muted">
+                  by {m.ownerHandle} · {m.location}
+                </p>
+                {m.summary && <p>{m.summary}</p>}
+                <div style={{ marginTop: 10 }}>
                   <p className="eyebrow">Compatibility Breakdown</p>
-                  {match.details.breakdown && Object.entries(match.details.breakdown).map(([key, val]) => (
-                    <div key={key} style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', borderBottom: '1px solid #333' }}>
-                      <span style={{ textTransform: 'capitalize' }}>{key}</span>
-                      <span>{val.score}/{val.max} — {val.note}</span>
+                  {Object.entries(m.breakdown || {}).map(([key, val]) => (
+                    <div
+                      key={key}
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        padding: "4px 0",
+                        borderBottom: "1px solid var(--glass-border)",
+                        fontSize: 13,
+                      }}
+                    >
+                      <span style={{ textTransform: "capitalize" }}>{key}</span>
+                      <span className="muted">
+                        {val.score}/{val.max} — {val.note}
+                      </span>
                     </div>
                   ))}
-                  <div style={{ marginTop: 8 }}>
-                    <p className="eyebrow">Profile Details</p>
-                    <p>Age: {match.details.age} | Height: {match.details.height}</p>
-                    <p>{match.details.family}</p>
-                    <p style={{ fontSize: '0.85em', opacity: 0.7 }}>{match.details.lifestyle}</p>
-                  </div>
                 </div>
-              )}
-              <button className="primary-btn small" onClick={() => setChatTarget(match)}>Start Chat</button>
-            </div>
-        ))
-        )}
-      </section>
-
-      {chatTarget && (
-        <div className="modal-overlay" onClick={() => setChatTarget(null)}>
-          <div className="card modal-card" onClick={(e) => e.stopPropagation()}>
-            <p className="eyebrow">Chat with {chatTarget.name}</p>
-            <h2>Coming Soon</h2>
-            <p>Real-time chat between matched profiles is under development. Stay tuned!</p>
-            <div style={{ marginTop: 16, padding: 16, background: "#1a1a2e", borderRadius: 8, minHeight: 120 }}>
-              <p className="muted">Chat preview will appear here...</p>
-            </div>
-            <button className="primary-btn" style={{ marginTop: 12 }} onClick={() => setChatTarget(null)}>Close</button>
-          </div>
-        </div>
-      )}
-    </main>
+              </div>
+            ))
+          )}
+        </section>
+      </main>
     </PremiumGate>
   );
 }

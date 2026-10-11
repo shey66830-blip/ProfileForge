@@ -20,7 +20,7 @@ const savedJobSchema = new mongoose.Schema(
       default: "",
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 savedJobSchema.index({ user: 1, jobId: 1 }, { unique: true });

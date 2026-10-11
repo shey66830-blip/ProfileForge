@@ -44,10 +44,7 @@ export default function JobDetailsModal({ job, onClose }) {
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div
-        className="card modal-card"
-        onClick={(e) => e.stopPropagation()}
-      >
+      <div className="card modal-card" onClick={(e) => e.stopPropagation()}>
         {/* Header */}
         <div className="modal-header">
           <div style={{ flex: 1 }}>
@@ -131,8 +128,7 @@ export default function JobDetailsModal({ job, onClose }) {
             <div className="modal-eligibility">
               {job.eligibility.map((item, i) => {
                 const pass =
-                  !item.toLowerCase().includes("not") &&
-                  !item.toLowerCase().includes("lack");
+                  !item.toLowerCase().includes("not") && !item.toLowerCase().includes("lack");
                 return (
                   <div key={i} className="modal-eligibility-item">
                     <span
@@ -161,24 +157,23 @@ export default function JobDetailsModal({ job, onClose }) {
                 ["Minimum", salaryPred.minimum],
                 ["Average", salaryPred.average],
                 ["Maximum", salaryPred.maximum],
-              ].map(
-                ([label, val]) =>
-                  val ? (
-                    <div key={label} className="modal-salary-row">
-                      <div className="modal-salary-labels">
-                        <span className="modal-salary-label">{label}</span>
-                        <span className="modal-salary-val">
-                          {fmt({ min: val, max: val, currency: salaryPred.currency })}
-                        </span>
-                      </div>
-                      <div className="modal-salary-bar-bg">
-                        <div
-                          className="modal-salary-bar-fill"
-                          style={{ width: barWidth(val) + "%" }}
-                        />
-                      </div>
+              ].map(([label, val]) =>
+                val ? (
+                  <div key={label} className="modal-salary-row">
+                    <div className="modal-salary-labels">
+                      <span className="modal-salary-label">{label}</span>
+                      <span className="modal-salary-val">
+                        {fmt({ min: val, max: val, currency: salaryPred.currency })}
+                      </span>
                     </div>
-                  ) : null
+                    <div className="modal-salary-bar-bg">
+                      <div
+                        className="modal-salary-bar-fill"
+                        style={{ width: barWidth(val) + "%" }}
+                      />
+                    </div>
+                  </div>
+                ) : null,
               )}
               {salaryPred.reason && (
                 <p className="muted" style={{ marginTop: 8, fontSize: 13 }}>
@@ -203,11 +198,9 @@ export default function JobDetailsModal({ job, onClose }) {
               <div className="card" style={{ padding: 14 }}>
                 <h3 style={{ margin: "0 0 4px" }}>Target Companies</h3>
                 <ul className="modal-company-list">
-                  {(job.careerAdvice.targetCompanies || [])
-                    .slice(0, 5)
-                    .map((c, i) => (
-                      <li key={i}>{c}</li>
-                    ))}
+                  {(job.careerAdvice.targetCompanies || []).slice(0, 5).map((c, i) => (
+                    <li key={i}>{c}</li>
+                  ))}
                 </ul>
               </div>
             </div>

@@ -24,28 +24,36 @@ export async function checkPremiumStatus() {
   try {
     const res = await fetch(`${API}/payment/premium-status`, { credentials: "include" });
     return res.json();
-  } catch { return { ok: false, premium: false, plan: "free" }; }
+  } catch {
+    return { ok: false, premium: false, plan: "free" };
+  }
 }
 
 export async function getUsage() {
   try {
     const res = await fetch(`${API}/payment/usage`, { credentials: "include" });
     return res.json();
-  } catch { return { ok: false }; }
+  } catch {
+    return { ok: false };
+  }
 }
 
 export async function cancelSubscription() {
   try {
     const res = await fetch(`${API}/payment/cancel`, { method: "POST", credentials: "include" });
     return res.json();
-  } catch { return { ok: false, message: "Backend not reachable." }; }
+  } catch {
+    return { ok: false, message: "Backend not reachable." };
+  }
 }
 
 export async function getPaymentHistory() {
   try {
     const res = await fetch(`${API}/payment/history`, { credentials: "include" });
     return res.json();
-  } catch { return { ok: false, payments: [] }; }
+  } catch {
+    return { ok: false, payments: [] };
+  }
 }
 
 // Mock test payment — activates premium instantly without Razorpay
@@ -58,7 +66,9 @@ export async function mockTestPayment(plan) {
       body: JSON.stringify({ plan: plan || "premium" }),
     });
     return res.json();
-  } catch { return { ok: false, message: "Backend not reachable." }; }
+  } catch {
+    return { ok: false, message: "Backend not reachable." };
+  }
 }
 
 export async function startPremiumCheckout(user, plan = "premium") {
@@ -88,14 +98,19 @@ export async function startPremiumCheckout(user, plan = "premium") {
         description: `${planLabel} Plan — ₹${planPrice}/month`,
         order_id: order.id,
         prefill: { name: user.name || "", email: user.email || "" },
-        theme: { color: plan === "pro" ? "#f59e0b" : "#6c5ce7" },
+        theme: { color: plan === "pro" ? "#f59e0b" : "#0d9488" },
         handler: async function (response) {
           const verifyResult = await verifyPayment({
             razorpay_order_id: response.razorpay_order_id,
             razorpay_payment_id: response.razorpay_payment_id,
             razorpay_signature: response.razorpay_signature,
           });
-          if (verifyResult.ok) resolve({ ok: true, premiumExpiry: verifyResult.premiumExpiry, plan: verifyResult.plan });
+          if (verifyResult.ok)
+            resolve({
+              ok: true,
+              premiumExpiry: verifyResult.premiumExpiry,
+              plan: verifyResult.plan,
+            });
           else resolve({ ok: false, message: verifyResult.message });
         },
         modal: { ondismiss: () => resolve({ ok: false, message: "Payment cancelled." }) },
@@ -109,7 +124,10 @@ export async function startPremiumCheckout(user, plan = "premium") {
 
 function loadRazorpayScript() {
   return new Promise((resolve, reject) => {
-    if (document.querySelector('script[src="https://checkout.razorpay.com/v1/checkout.js"]')) { resolve(true); return; }
+    if (document.querySelector('script[src="https://checkout.razorpay.com/v1/checkout.js"]')) {
+      resolve(true);
+      return;
+    }
     const script = document.createElement("script");
     script.src = "https://checkout.razorpay.com/v1/checkout.js";
     script.onload = () => resolve(true);

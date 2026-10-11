@@ -8,14 +8,13 @@ import { Strategy as GitHubStrategy } from "passport-github2";
 import User from "../models/User.js";
 import generateToken from "../utils/generateToken.js";
 
-
-
 passport.use(
   new GoogleStrategy(
     {
       clientID: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-      callbackURL: process.env.GOOGLE_CALLBACK_URL || "http://localhost:5000/api/auth/google/callback",
+      callbackURL:
+        process.env.GOOGLE_CALLBACK_URL || "http://localhost:5000/api/auth/google/callback",
     },
     async (accessToken, refreshToken, profile, done) => {
       try {
@@ -40,8 +39,8 @@ passport.use(
       } catch (err) {
         return done(err, null);
       }
-    }
-  )
+    },
+  ),
 );
 
 passport.use(
@@ -49,13 +48,12 @@ passport.use(
     {
       clientID: process.env.GITHUB_CLIENT_ID,
       clientSecret: process.env.GITHUB_CLIENT_SECRET,
-      callbackURL: process.env.GITHUB_CALLBACK_URL || "http://localhost:5000/api/auth/github/callback",
+      callbackURL:
+        process.env.GITHUB_CALLBACK_URL || "http://localhost:5000/api/auth/github/callback",
     },
     async (accessToken, refreshToken, profile, done) => {
       try {
-        const email =
-          profile.emails?.[0]?.value ||
-          `${profile.username}@github.local`;
+        const email = profile.emails?.[0]?.value || `${profile.username}@github.local`;
 
         let user = await User.findOne({ email });
 
@@ -75,8 +73,8 @@ passport.use(
       } catch (err) {
         return done(err, null);
       }
-    }
-  )
+    },
+  ),
 );
 
 export default passport;
