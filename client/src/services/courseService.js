@@ -11,10 +11,16 @@ export async function getCourses(filters = {}) {
     if (filters.sort) params.set("sort", filters.sort);
     const res = await fetch(`${API}/courses?${params}`, { credentials: "include" });
     return await res.json();
-  } catch { return { ok: false, courses: [] }; }
+  } catch {
+    return { ok: false, courses: [] };
+  }
 }
 
-export async function getRecommendedCourses(missingSkills = [], matchedSkills = [], category = null) {
+export async function getRecommendedCourses(
+  missingSkills = [],
+  matchedSkills = [],
+  category = null,
+) {
   try {
     const params = new URLSearchParams();
     params.set("missingSkills", missingSkills.join(","));
@@ -22,7 +28,9 @@ export async function getRecommendedCourses(missingSkills = [], matchedSkills = 
     if (category) params.set("category", category);
     const res = await fetch(`${API}/courses/recommended?${params}`, { credentials: "include" });
     return await res.json();
-  } catch { return { ok: false, courses: [], certifications: [], learningPath: null }; }
+  } catch {
+    return { ok: false, courses: [], certifications: [], learningPath: null };
+  }
 }
 
 export async function getCertifications(filters = {}) {
@@ -34,23 +42,31 @@ export async function getCertifications(filters = {}) {
     if (filters.search) params.set("search", filters.search);
     const res = await fetch(`${API}/certifications?${params}`, { credentials: "include" });
     return await res.json();
-  } catch { return { ok: false, certifications: [] }; }
+  } catch {
+    return { ok: false, certifications: [] };
+  }
 }
 
 export async function getRecommendedCertifications(missingSkills = []) {
   try {
     const params = new URLSearchParams();
     params.set("missingSkills", missingSkills.join(","));
-    const res = await fetch(`${API}/certifications/recommended?${params}`, { credentials: "include" });
+    const res = await fetch(`${API}/certifications/recommended?${params}`, {
+      credentials: "include",
+    });
     return await res.json();
-  } catch { return { ok: false, certifications: [] }; }
+  } catch {
+    return { ok: false, certifications: [] };
+  }
 }
 
 export async function getEnrolledCourses() {
   try {
     const res = await fetch(`${API}/courses/enrolled/my`, { credentials: "include" });
     return await res.json();
-  } catch { return { ok: false, enrollments: [] }; }
+  } catch {
+    return { ok: false, enrollments: [] };
+  }
 }
 
 export async function enrollCourse(courseId) {
@@ -62,5 +78,7 @@ export async function enrollCourse(courseId) {
       body: JSON.stringify({ courseId }),
     });
     return await res.json();
-  } catch { return { ok: false, message: "Backend not reachable." }; }
+  } catch {
+    return { ok: false, message: "Backend not reachable." };
+  }
 }

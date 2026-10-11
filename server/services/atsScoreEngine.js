@@ -4,164 +4,117 @@
 // =============================================
 
 export default function calculateATS(resumeAnalysis = {}) {
+  const { skills = {}, education = {}, experience = {}, cleanedText = "" } = resumeAnalysis;
 
-    const {
-        skills = {},
-        education = {},
-        experience = {},
-        cleanedText = ""
-    } = resumeAnalysis;
+  let score = 0;
 
-    let score = 0;
+  const breakdown = {};
 
-    const breakdown = {};
+  // -----------------------------
+  // Contact Information
+  // -----------------------------
 
-    // -----------------------------
-    // Contact Information
-    // -----------------------------
+  const hasEmail = /\S+@\S+\.\S+/.test(cleanedText);
 
-    const hasEmail =
-        /\S+@\S+\.\S+/.test(cleanedText);
+  const hasPhone = /\+?\d[\d\s-]{8,}/.test(cleanedText);
 
-    const hasPhone =
-        /\+?\d[\d\s-]{8,}/.test(cleanedText);
+  breakdown.contact = hasEmail && hasPhone ? 10 : 5;
+  score += breakdown.contact;
 
-    breakdown.contact = hasEmail && hasPhone ? 10 : 5;
-    score += breakdown.contact;
+  // -----------------------------
+  // Skills
+  // -----------------------------
 
-    // -----------------------------
-    // Skills
-    // -----------------------------
+  const skillScore = Math.min((skills.totalSkills || 0) * 2, 20);
 
-    const skillScore = Math.min(
-        (skills.totalSkills || 0) * 2,
-        20
-    );
+  breakdown.skills = skillScore;
+  score += skillScore;
 
-    breakdown.skills = skillScore;
-    score += skillScore;
+  // -----------------------------
+  // Education
+  // -----------------------------
 
-    // -----------------------------
-    // Education
-    // -----------------------------
+  breakdown.education = education.highestQualification ? 15 : 5;
 
-    breakdown.education =
-        education.highestQualification
-            ? 15
-            : 5;
+  score += breakdown.education;
 
-    score += breakdown.education;
+  // -----------------------------
+  // Experience
+  // -----------------------------
 
-    // -----------------------------
-    // Experience
-    // -----------------------------
+  breakdown.experience = experience.estimatedYears > 0 ? 15 : 8;
 
-    breakdown.experience =
-        experience.estimatedYears > 0
-            ? 15
-            : 8;
+  score += breakdown.experience;
 
-    score += breakdown.experience;
+  // -----------------------------
+  // Projects
+  // -----------------------------
 
-    // -----------------------------
-    // Projects
-    // -----------------------------
+  breakdown.projects = (experience.projectKeywords?.length || 0) > 0 ? 10 : 4;
 
-    breakdown.projects =
-        (experience.projectKeywords?.length || 0) > 0
-            ? 10
-            : 4;
+  score += breakdown.projects;
 
-    score += breakdown.projects;
+  // -----------------------------
+  // Leadership
+  // -----------------------------
 
-    // -----------------------------
-    // Leadership
-    // -----------------------------
+  breakdown.leadership = experience.hasLeadership ? 10 : 4;
 
-    breakdown.leadership =
-        experience.hasLeadership
-            ? 10
-            : 4;
+  score += breakdown.leadership;
 
-    score += breakdown.leadership;
+  // -----------------------------
+  // Achievements
+  // -----------------------------
 
-    // -----------------------------
-    // Achievements
-    // -----------------------------
+  breakdown.achievements = (experience.achievements?.length || 0) > 0 ? 10 : 5;
 
-    breakdown.achievements =
-        (experience.achievements?.length || 0) > 0
-            ? 10
-            : 5;
+  score += breakdown.achievements;
 
-    score += breakdown.achievements;
+  // -----------------------------
+  // Resume Length
+  // -----------------------------
 
-    // -----------------------------
-    // Resume Length
-    // -----------------------------
+  const words = cleanedText.split(/\s+/).length;
 
-    const words = cleanedText.split(/\s+/).length;
+  if (words >= 250 && words <= 900) breakdown.length = 10;
+  else breakdown.length = 5;
 
-    if (words >= 250 && words <= 900)
-        breakdown.length = 10;
-    else
-        breakdown.length = 5;
+  score += breakdown.length;
 
-    score += breakdown.length;
+  score = Math.min(score, 100);
 
-    score = Math.min(score, 100);
+  // -----------------------------
+  // Grade
+  // -----------------------------
 
-    // -----------------------------
-    // Grade
-    // -----------------------------
+  let grade = "D";
 
-    let grade = "D";
+  if (score >= 90) grade = "A+";
+  else if (score >= 80) grade = "A";
+  else if (score >= 70) grade = "B";
+  else if (score >= 60) grade = "C";
 
-    if (score >= 90)
-        grade = "A+";
-    else if (score >= 80)
-        grade = "A";
-    else if (score >= 70)
-        grade = "B";
-    else if (score >= 60)
-        grade = "C";
+  return {
+    score,
 
-    return {
+    grade,
 
-        score,
+    breakdown,
 
-        grade,
+    suggestions: [
+      !hasEmail || !hasPhone ? "Add complete contact information." : null,
 
-        breakdown,
+      (skills.totalSkills || 0) < 8 ? "Add more technical and soft skills." : null,
 
-        suggestions: [
+      !education.highestQualification ? "Mention your highest qualification." : null,
 
-            !hasEmail || !hasPhone
-                ? "Add complete contact information."
-                : null,
+      experience.estimatedYears === 0 ? "Add internships or projects." : null,
 
-            (skills.totalSkills || 0) < 8
-                ? "Add more technical and soft skills."
-                : null,
+      (experience.projectKeywords?.length || 0) === 0
+        ? "Include academic or personal projects."
+        : null,
 
-            !education.highestQualification
-                ? "Mention your highest qualification."
-                : null,
-
-            experience.estimatedYears === 0
-                ? "Add internships or projects."
-                : null,
-
-            (experience.projectKeywords?.length || 0) === 0
-                ? "Include academic or personal projects."
-                : null,
-
-            !experience.hasLeadership
-                ? "Highlight leadership or extracurricular activities."
-                : null
-
-        ].filter(Boolean)
-
-    };
-
+      !experience.hasLeadership ? "Highlight leadership or extracurricular activities." : null,
+    ].filter(Boolean),
+  };
 }

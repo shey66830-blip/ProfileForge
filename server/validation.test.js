@@ -5,7 +5,15 @@ import assert from "node:assert/strict";
 // Since it uses ESM exports, we dynamic-import it.
 
 const mod = await import("./middleware/validate.js");
-const { validate, signupSchema, loginSchema, documentSchema, aiEditSchema, aiAnalysisSchema, aiCompareSchema } = mod;
+const {
+  validate,
+  signupSchema,
+  loginSchema,
+  documentSchema,
+  aiEditSchema,
+  aiAnalysisSchema,
+  aiCompareSchema,
+} = mod;
 
 // Helper: create a mock req/res/next
 function mockReqRes(body = {}) {
@@ -13,8 +21,14 @@ function mockReqRes(body = {}) {
   let statusCode = 200;
   let jsonBody = null;
   const res = {
-    status(code) { statusCode = code; return res; },
-    json(data) { jsonBody = data; return res; },
+    status(code) {
+      statusCode = code;
+      return res;
+    },
+    json(data) {
+      jsonBody = data;
+      return res;
+    },
   };
   const next = () => {};
   return { req, res, next, getResult: () => ({ statusCode, jsonBody }) };

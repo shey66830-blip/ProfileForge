@@ -81,24 +81,25 @@ export async function compareModels({
     jobProfile,
   });
 
-  const secondResult = providerConfigB && modelB
-    ? await (async () => {
-        const clientB = providerConfigB.client;
-        return analyzeWithModel({
-          providerClient: { provider: providerConfigB.provider, client: clientB },
-          model: modelB,
-          resume,
-          resumeAnalysis,
-          ats,
-          jobProfile,
-        });
-      })()
-    : {
-        model: modelB || "(not provided)",
-        provider: providerConfigB?.provider || "(not provided)",
-        match: null,
-        qualitative: null,
-      };
+  const secondResult =
+    providerConfigB && modelB
+      ? await (async () => {
+          const clientB = providerConfigB.client;
+          return analyzeWithModel({
+            providerClient: { provider: providerConfigB.provider, client: clientB },
+            model: modelB,
+            resume,
+            resumeAnalysis,
+            ats,
+            jobProfile,
+          });
+        })()
+      : {
+          model: modelB || "(not provided)",
+          provider: providerConfigB?.provider || "(not provided)",
+          match: null,
+          qualitative: null,
+        };
 
   const envelopeA = buildAnalysisEnvelope({
     resume,
@@ -121,11 +122,16 @@ export async function compareModels({
       })
     : null;
 
-  const dimA = resultA.match;
   const dimB = secondMatch && secondMatch.skillMatch != null ? secondMatch : resultA.match;
   const skillAgreement = computeAgreementItem(resultA.match.skillMatch, dimB.skillMatch);
-  const experienceAgreement = computeAgreementItem(resultA.match.experienceMatch, dimB.experienceMatch);
-  const educationAgreement = computeAgreementItem(resultA.match.educationMatch, dimB.educationMatch);
+  const experienceAgreement = computeAgreementItem(
+    resultA.match.experienceMatch,
+    dimB.experienceMatch,
+  );
+  const educationAgreement = computeAgreementItem(
+    resultA.match.educationMatch,
+    dimB.educationMatch,
+  );
   const overallAgreement = computeAgreementItem(resultA.match.overall, dimB.overall);
 
   const comparison = {
@@ -153,15 +159,15 @@ export async function compareModels({
     consensus: {
       agreedMatchedSkills: intersection(
         resultA.match.matchedSkills || [],
-        dimB.matchedSkills || []
+        dimB.matchedSkills || [],
       ),
       agreedMissingRequired: intersection(
         resultA.match.missingRequired || [],
-        dimB.missingRequired || []
+        dimB.missingRequired || [],
       ),
       disagreedMissingRequired: symmetricDifference(
         resultA.match.missingRequired || [],
-        dimB.missingRequired || []
+        dimB.missingRequired || [],
       ),
     },
   };

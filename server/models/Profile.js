@@ -14,7 +14,7 @@ const provenanceSchema = new mongoose.Schema(
     verified: { type: Boolean, default: false },
     updatedAt: { type: Date, default: Date.now },
   },
-  { _id: false }
+  { _id: false },
 );
 
 // ── Section item schemas ───────────────────────────────────────────
@@ -24,7 +24,7 @@ const skillItemSchema = new mongoose.Schema(
     name: { type: String, required: true },
     provenance: { type: provenanceSchema, default: () => ({}) },
   },
-  { _id: false }
+  { _id: false },
 );
 
 const experienceItemSchema = new mongoose.Schema(
@@ -38,7 +38,7 @@ const experienceItemSchema = new mongoose.Schema(
     current: { type: Boolean, default: false },
     provenance: { type: provenanceSchema, default: () => ({}) },
   },
-  { _id: false }
+  { _id: false },
 );
 
 const educationItemSchema = new mongoose.Schema(
@@ -52,7 +52,7 @@ const educationItemSchema = new mongoose.Schema(
     description: { type: String, default: "" },
     provenance: { type: provenanceSchema, default: () => ({}) },
   },
-  { _id: false }
+  { _id: false },
 );
 
 const projectItemSchema = new mongoose.Schema(
@@ -65,7 +65,7 @@ const projectItemSchema = new mongoose.Schema(
     endDate: { type: String, default: "" },
     provenance: { type: provenanceSchema, default: () => ({}) },
   },
-  { _id: false }
+  { _id: false },
 );
 
 const certificationItemSchema = new mongoose.Schema(
@@ -78,7 +78,7 @@ const certificationItemSchema = new mongoose.Schema(
     url: { type: String, default: "" },
     provenance: { type: provenanceSchema, default: () => ({}) },
   },
-  { _id: false }
+  { _id: false },
 );
 
 const linkItemSchema = new mongoose.Schema(
@@ -87,7 +87,7 @@ const linkItemSchema = new mongoose.Schema(
     url: { type: String, default: "" },
     provenance: { type: provenanceSchema, default: () => ({}) },
   },
-  { _id: false }
+  { _id: false },
 );
 
 const jobPreferencesSchema = new mongoose.Schema(
@@ -103,7 +103,7 @@ const jobPreferencesSchema = new mongoose.Schema(
     openToRelocate: { type: Boolean, default: false },
     provenance: { type: provenanceSchema, default: () => ({}) },
   },
-  { _id: false }
+  { _id: false },
 );
 
 // ── AI suggestion sub-document ─────────────────────────────────────
@@ -139,7 +139,7 @@ const aiSuggestionSchema = new mongoose.Schema(
     accepted: { type: Boolean, default: null },
     createdAt: { type: Date, default: Date.now },
   },
-  { _id: true }
+  { _id: true },
 );
 
 // ── Main profile schema ────────────────────────────────────────────
@@ -206,7 +206,7 @@ const profileSchema = new mongoose.Schema(
       default: null,
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 // One profile per user — the `unique: true` on the `user` field above

@@ -9,7 +9,7 @@ const usageSchema = new mongoose.Schema(
     coverLetterUsed: { type: Number, default: 0 },
     lastResetDate: { type: Date, default: Date.now },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 export default mongoose.model("Usage", usageSchema);

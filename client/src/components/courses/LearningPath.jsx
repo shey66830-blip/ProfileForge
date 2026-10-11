@@ -9,7 +9,13 @@ export default function LearningPath({ path }) {
         <h2>{path.title}</h2>
         <div className="learning-path-stats">
           <span>⏱ {path.estimatedWeeks} weeks estimated</span>
-          <span>💰 Total: {path.totalCost > 0 ? (path.steps[0]?.currency === "USD" ? "$" : "\u20B9") + path.totalCost.toLocaleString() : "Free"}</span>
+          <span>
+            💰 Total:{" "}
+            {path.totalCost > 0
+              ? (path.steps[0]?.currency === "USD" ? "$" : "\u20B9") +
+                path.totalCost.toLocaleString()
+              : "Free"}
+          </span>
           <span>📚 {path.steps.length} steps</span>
         </div>
       </div>
@@ -35,7 +41,10 @@ export default function LearningPath({ path }) {
                 <span className="learning-path-skill">🎯 {step.skill}</span>
                 <span>⏱ {step.duration}</span>
                 {step.price > 0 ? (
-                  <span>{step.currency === "USD" ? "$" : "\u20B9"}{step.price.toLocaleString()}</span>
+                  <span>
+                    {step.currency === "USD" ? "$" : "\u20B9"}
+                    {step.price.toLocaleString()}
+                  </span>
                 ) : (
                   <span className="price-free">FREE</span>
                 )}
@@ -49,7 +58,11 @@ export default function LearningPath({ path }) {
         <div className="learning-path-summary">
           <h4>Skills you'll gain:</h4>
           <div className="learning-path-skills">
-            {path.skillsCovered.map((s, i) => <span key={i} className="skill-chip skill-matched">{s}</span>)}
+            {path.skillsCovered.map((s, i) => (
+              <span key={i} className="skill-chip skill-matched">
+                {s}
+              </span>
+            ))}
           </div>
         </div>
       )}

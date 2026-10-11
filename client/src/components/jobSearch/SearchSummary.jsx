@@ -1,11 +1,18 @@
 import React from "react";
 
-export default function SearchSummary({ filters, totalJobs = 0, jobs = [], selectedResume, resumeName }) {
+export default function SearchSummary({
+  filters,
+  totalJobs = 0,
+  jobs = [],
+  selectedResume,
+  resumeName,
+}) {
   const currentTime = new Date().toLocaleString();
   const remoteJobs = jobs.filter((j) => j.remote).length;
-  const avgMatch = totalJobs > 0
-    ? Math.round(jobs.reduce((sum, j) => sum + (j.match?.overall || 0), 0) / totalJobs)
-    : 0;
+  const avgMatch =
+    totalJobs > 0
+      ? Math.round(jobs.reduce((sum, j) => sum + (j.match?.overall || 0), 0) / totalJobs)
+      : 0;
 
   const sources = [...new Set(jobs.map((j) => j.source))];
 
@@ -23,7 +30,11 @@ export default function SearchSummary({ filters, totalJobs = 0, jobs = [], selec
         <div className="card">
           <h3>Resume Status</h3>
           <h2>{selectedResume ? "Selected ✅" : "Not Selected ❌"}</h2>
-          <p>{selectedResume && resumeName ? `Using: ${resumeName}` : "Select a resume for better matching."}</p>
+          <p>
+            {selectedResume && resumeName
+              ? `Using: ${resumeName}`
+              : "Select a resume for better matching."}
+          </p>
         </div>
         <div className="card">
           <h3>AI Status</h3>
@@ -59,15 +70,51 @@ export default function SearchSummary({ filters, totalJobs = 0, jobs = [], selec
 
       <h3>Applied Filters</h3>
       <div className="grid three">
-        <div className="card"><strong>Looking For</strong><br />{filters.lookingFor || "Any"}</div>
-        <div className="card"><strong>Career Domain</strong><br />{filters.domain || "Not Selected"}</div>
-        <div className="card"><strong>Specialization</strong><br />{filters.specialization || "Any"}</div>
-        <div className="card"><strong>Experience</strong><br />{filters.experience || "Any"}</div>
-        <div className="card"><strong>Work Mode</strong><br />{filters.workMode || "Any"}</div>
-        <div className="card"><strong>Employment Type</strong><br />{filters.employmentType || "Any"}</div>
-        <div className="card"><strong>Country</strong><br />{filters.country || "Auto"}</div>
-        <div className="card"><strong>State</strong><br />{filters.state || "Any"}</div>
-        <div className="card"><strong>City</strong><br />{filters.city || "Any"}</div>
+        <div className="card">
+          <strong>Looking For</strong>
+          <br />
+          {filters.lookingFor || "Any"}
+        </div>
+        <div className="card">
+          <strong>Career Domain</strong>
+          <br />
+          {filters.domain || "Not Selected"}
+        </div>
+        <div className="card">
+          <strong>Specialization</strong>
+          <br />
+          {filters.specialization || "Any"}
+        </div>
+        <div className="card">
+          <strong>Experience</strong>
+          <br />
+          {filters.experience || "Any"}
+        </div>
+        <div className="card">
+          <strong>Work Mode</strong>
+          <br />
+          {filters.workMode || "Any"}
+        </div>
+        <div className="card">
+          <strong>Employment Type</strong>
+          <br />
+          {filters.employmentType || "Any"}
+        </div>
+        <div className="card">
+          <strong>Country</strong>
+          <br />
+          {filters.country || "Auto"}
+        </div>
+        <div className="card">
+          <strong>State</strong>
+          <br />
+          {filters.state || "Any"}
+        </div>
+        <div className="card">
+          <strong>City</strong>
+          <br />
+          {filters.city || "Any"}
+        </div>
       </div>
 
       <hr />

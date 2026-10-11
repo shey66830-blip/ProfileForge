@@ -5,17 +5,66 @@ import React, { useState } from "react";
 // aliases, ISO codes, and even "City, Country" input, and uses it as a
 // natural-language location for sources like JSearch.
 const COUNTRIES = [
-  "India", "United States", "United Kingdom", "Canada", "Australia",
-  "Germany", "Singapore", "United Arab Emirates", "Netherlands",
-  "Ireland", "France", "Spain", "Italy", "Poland", "Portugal",
-  "Switzerland", "Sweden", "Norway", "Denmark", "Finland", "Belgium",
-  "Austria", "Japan", "South Korea", "China", "Hong Kong", "Taiwan",
-  "Malaysia", "Indonesia", "Philippines", "Thailand", "Vietnam",
-  "New Zealand", "Saudi Arabia", "Qatar", "Kuwait", "Bahrain", "Oman",
-  "Israel", "Turkey", "Egypt", "South Africa", "Nigeria", "Kenya",
-  "Morocco", "Brazil", "Mexico", "Argentina", "Chile", "Colombia",
-  "Peru", "Czech Republic", "Romania", "Greece", "Hungary", "Ukraine",
-  "Pakistan", "Bangladesh", "Sri Lanka", "Nepal",
+  "India",
+  "United States",
+  "United Kingdom",
+  "Canada",
+  "Australia",
+  "Germany",
+  "Singapore",
+  "United Arab Emirates",
+  "Netherlands",
+  "Ireland",
+  "France",
+  "Spain",
+  "Italy",
+  "Poland",
+  "Portugal",
+  "Switzerland",
+  "Sweden",
+  "Norway",
+  "Denmark",
+  "Finland",
+  "Belgium",
+  "Austria",
+  "Japan",
+  "South Korea",
+  "China",
+  "Hong Kong",
+  "Taiwan",
+  "Malaysia",
+  "Indonesia",
+  "Philippines",
+  "Thailand",
+  "Vietnam",
+  "New Zealand",
+  "Saudi Arabia",
+  "Qatar",
+  "Kuwait",
+  "Bahrain",
+  "Oman",
+  "Israel",
+  "Turkey",
+  "Egypt",
+  "South Africa",
+  "Nigeria",
+  "Kenya",
+  "Morocco",
+  "Brazil",
+  "Mexico",
+  "Argentina",
+  "Chile",
+  "Colombia",
+  "Peru",
+  "Czech Republic",
+  "Romania",
+  "Greece",
+  "Hungary",
+  "Ukraine",
+  "Pakistan",
+  "Bangladesh",
+  "Sri Lanka",
+  "Nepal",
 ];
 
 const OTHER = "__other__";
@@ -47,10 +96,7 @@ const indianStates = [
   "Others",
 ];
 
-export default function LocationSelector({
-  filters,
-  setFilters,
-}) {
+export default function LocationSelector({ filters, setFilters }) {
   const [otherMode, setOtherMode] = useState(false);
 
   const update = (field, value) => {
@@ -61,28 +107,22 @@ export default function LocationSelector({
   };
 
   const selectValue =
-    otherMode || (filters.country !== "all" && filters.country && !COUNTRIES.includes(filters.country))
+    otherMode ||
+    (filters.country !== "all" && filters.country && !COUNTRIES.includes(filters.country))
       ? OTHER
-      : (filters.country || "all");
+      : filters.country || "all";
 
   const isIndia = filters.country === "India";
   const showOtherInput = selectValue === OTHER;
 
   return (
     <section className="card">
+      <p className="eyebrow">Location Preferences</p>
 
-      <p className="eyebrow">
-        Location Preferences
-      </p>
-
-      <h2>
-        Choose Preferred Job Location
-      </h2>
+      <h2>Choose Preferred Job Location</h2>
 
       <div className="grid three">
-
         <div>
-
           <label>Country / Region</label>
 
           <select
@@ -100,20 +140,15 @@ export default function LocationSelector({
           >
             <option value="all">🌍 Worldwide (default)</option>
             {COUNTRIES.map((country) => (
-              <option
-                key={country}
-                value={country}
-              >
+              <option key={country} value={country}>
                 {country}
               </option>
             ))}
             <option value={OTHER}>Other (type any country)…</option>
           </select>
-
         </div>
 
         <div>
-
           {showOtherInput ? (
             <>
               <label>Any country or city</label>
@@ -130,56 +165,34 @@ export default function LocationSelector({
               <input
                 placeholder="Enter City"
                 value={filters.city}
-                onChange={(e) =>
-                  update("city", e.target.value)
-                }
+                onChange={(e) => update("city", e.target.value)}
               />
             </>
           )}
-
         </div>
 
         <div>
-
           <label>State (India)</label>
 
           {isIndia ? (
-            <select
-              value={filters.state}
-              onChange={(e) =>
-                update("state", e.target.value)
-              }
-            >
+            <select value={filters.state} onChange={(e) => update("state", e.target.value)}>
               {indianStates.map((state) => (
-                <option
-                  key={state}
-                  value={state}
-                >
+                <option key={state} value={state}>
                   {state}
                 </option>
               ))}
             </select>
           ) : (
-            <input
-              disabled
-              placeholder="— country-wide search —"
-              value=""
-              onChange={() => {}}
-            />
+            <input disabled placeholder="— country-wide search —" value="" onChange={() => {}} />
           )}
-
         </div>
-
       </div>
 
       <div className="grid three">
-
         <div>
-
           <label>Search Radius</label>
 
           <select>
-
             <option>10 KM</option>
 
             <option>25 KM</option>
@@ -191,17 +204,13 @@ export default function LocationSelector({
             <option>250 KM</option>
 
             <option>Entire Country</option>
-
           </select>
-
         </div>
 
         <div>
-
           <label>Preferred Region</label>
 
           <select>
-
             <option>No Preference</option>
 
             <option>Nearby Only</option>
@@ -211,27 +220,20 @@ export default function LocationSelector({
             <option>Same Country</option>
 
             <option>Worldwide</option>
-
           </select>
-
         </div>
 
         <div>
-
           <label>Relocation</label>
 
           <select>
-
             <option>Yes</option>
 
             <option>No</option>
 
             <option>Maybe</option>
-
           </select>
-
         </div>
-
       </div>
 
       <div
@@ -241,25 +243,14 @@ export default function LocationSelector({
           background: "#181825",
         }}
       >
-
-        <h3>
-          🌍 Search Anywhere
-        </h3>
+        <h3>🌍 Search Anywhere</h3>
 
         <p>
-
-          Pick <b>Worldwide</b> for the widest global results, choose a country
-
-          from the list, or select <b>Other</b> and type any country or city —
-
-          jobs are pulled from 7 international sources and matched to your
-
-          location.
-
+          Pick <b>Worldwide</b> for the widest global results, choose a country from the list, or
+          select <b>Other</b> and type any country or city — jobs are pulled from 7 international
+          sources and matched to your location.
         </p>
-
       </div>
-
     </section>
   );
 }

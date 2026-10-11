@@ -6,200 +6,152 @@
 import { normalizeText } from "../utils/textCleaner.js";
 
 const IMPORTANT_SECTIONS = [
+  "about",
 
-    "about",
+  "about the role",
 
-    "about the role",
+  "about us",
 
-    "about us",
+  "job summary",
 
-    "job summary",
+  "responsibilities",
 
-    "responsibilities",
+  "key responsibilities",
 
-    "key responsibilities",
+  "what you'll do",
 
-    "what you'll do",
+  "what you will do",
 
-    "what you will do",
+  "requirements",
 
-    "requirements",
+  "qualifications",
 
-    "qualifications",
+  "who you are",
 
-    "who you are",
+  "candidate",
 
-    "candidate",
+  "role",
 
-    "role",
-
-    "position"
-
+  "position",
 ];
 
 const REMOVE_PATTERNS = [
+  "equal opportunity employer",
 
-    "equal opportunity employer",
+  "privacy policy",
 
-    "privacy policy",
+  "click here",
 
-    "click here",
+  "apply now",
 
-    "apply now",
+  "about the company",
 
-    "about the company",
+  "benefits may vary",
 
-    "benefits may vary",
+  "all rights reserved",
 
-    "all rights reserved",
-
-    "terms and conditions"
-
+  "terms and conditions",
 ];
 
 function cleanDescription(text = "") {
+  let cleaned = text
+    .replace(/<[^>]*>/g, " ")
+    .replace(/\r/g, "")
+    .replace(/\t/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 
-    let cleaned = text
-        .replace(/<[^>]*>/g, " ")
-        .replace(/\r/g, "")
-        .replace(/\t/g, " ")
-        .replace(/\s+/g, " ")
-        .trim();
+  REMOVE_PATTERNS.forEach((pattern) => {
+    const regex = new RegExp(pattern, "ig");
 
-    REMOVE_PATTERNS.forEach(pattern => {
+    cleaned = cleaned.replace(regex, "");
+  });
 
-        const regex = new RegExp(pattern, "ig");
-
-        cleaned = cleaned.replace(regex, "");
-
-    });
-
-    return cleaned;
-
+  return cleaned;
 }
 
 function splitSentences(text = "") {
+  return text
 
-    return text
+    .split(/(?<=[.!?])\s+/)
 
-        .split(/(?<=[.!?])\s+/)
+    .map((sentence) => sentence.trim())
 
-        .map(sentence => sentence.trim())
-
-        .filter(Boolean);
-
+    .filter(Boolean);
 }
 
 function scoreSentence(sentence = "") {
+  const lower = normalizeText(sentence);
 
-    const lower = normalizeText(sentence);
+  let score = 0;
 
-    let score = 0;
+  IMPORTANT_SECTIONS.forEach((keyword) => {
+    if (lower.includes(keyword)) score += 3;
+  });
 
-    IMPORTANT_SECTIONS.forEach(keyword => {
+  if (lower.includes("experience")) score += 2;
 
-        if (lower.includes(keyword))
+  if (lower.includes("skills")) score += 2;
 
-            score += 3;
+  if (lower.includes("responsible")) score += 2;
 
-    });
+  if (lower.includes("required")) score += 2;
 
-    if (lower.includes("experience"))
+  if (lower.includes("qualification")) score += 2;
 
-        score += 2;
+  if (lower.includes("team")) score++;
 
-    if (lower.includes("skills"))
+  if (lower.includes("customer")) score++;
 
-        score += 2;
+  if (lower.includes("develop")) score++;
 
-    if (lower.includes("responsible"))
+  if (sentence.length > 40 && sentence.length < 220) score += 2;
 
-        score += 2;
-
-    if (lower.includes("required"))
-
-        score += 2;
-
-    if (lower.includes("qualification"))
-
-        score += 2;
-
-    if (lower.includes("team"))
-
-        score++;
-
-    if (lower.includes("customer"))
-
-        score++;
-
-    if (lower.includes("develop"))
-
-        score++;
-
-    if (sentence.length > 40 && sentence.length < 220)
-
-        score += 2;
-
-    return score;
-
+  return score;
 }
 
 export default function summarizeJob(description = "", maxWords = 120) {
+  if (!description) return "No job description provided.";
 
-    if (!description)
+  const cleaned = cleanDescription(description);
 
-        return "No job description provided.";
+  const sentences = splitSentences(cleaned);
 
-    const cleaned = cleanDescription(description);
+  const ranked = sentences
 
-    const sentences = splitSentences(cleaned);
+    .map((sentence) => ({
+      sentence,
 
-    const ranked = sentences
+      score: scoreSentence(sentence),
+    }))
 
-        .map(sentence => ({
+    .sort((a, b) => b.score - a.score);
 
-            sentence,
+  let summary = "";
 
-            score: scoreSentence(sentence)
+  let wordCount = 0;
 
-        }))
+  for (const item of ranked) {
+    const words = item.sentence.split(" ");
 
-        .sort((a, b) => b.score - a.score);
+    if (wordCount + words.length > maxWords) continue;
 
-    let summary = "";
+    summary += item.sentence + " ";
 
-    let wordCount = 0;
+    wordCount += words.length;
 
-    for (const item of ranked) {
+    if (wordCount >= maxWords) break;
+  }
 
-        const words = item.sentence.split(" ");
+  if (!summary) {
+    summary = cleaned
 
-        if (wordCount + words.length > maxWords)
+      .split(" ")
 
-            continue;
+      .slice(0, maxWords)
 
-        summary += item.sentence + " ";
+      .join(" ");
+  }
 
-        wordCount += words.length;
-
-        if (wordCount >= maxWords)
-
-            break;
-
-    }
-
-    if (!summary) {
-
-        summary = cleaned
-
-            .split(" ")
-
-            .slice(0, maxWords)
-
-            .join(" ");
-
-    }
-
-    return summary.trim();
-
+  return summary.trim();
 }

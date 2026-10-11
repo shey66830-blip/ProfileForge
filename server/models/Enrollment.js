@@ -21,7 +21,7 @@ const enrollmentSchema = new mongoose.Schema(
     },
     completedAt: { type: Date },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 enrollmentSchema.index({ user: 1, course: 1 }, { unique: true });

@@ -13,6 +13,16 @@ async function api(path, opts = {}) {
   }
 }
 
+// ── Hiring mode ───────────────────────────────────────────────────
+// Reads the flag from /auth/me; null means "unknown" (backend down etc.).
+export const fetchHiringMode = async () => {
+  const res = await api("/auth/me");
+  return res.ok ? !!res.user?.hiringMode : null;
+};
+
+export const setHiringMode = (hiringMode) =>
+  api("/auth/hiring-mode", { method: "PUT", body: JSON.stringify({ hiringMode }) });
+
 // ── My post ────────────────────────────────────────────────────────
 export const getMyReversePost = () => api("/reverse/me");
 

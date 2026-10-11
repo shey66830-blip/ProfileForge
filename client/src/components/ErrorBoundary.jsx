@@ -23,10 +23,22 @@ export default class ErrorBoundary extends React.Component {
             <h2>Something went wrong</h2>
             <p>An unexpected error occurred. Please try again.</p>
             <div className="error-boundary-actions">
-              <button className="primary-btn" onClick={() => { this.setState({ hasError: false, error: null }); window.location.reload(); }}>
+              <button
+                className="primary-btn"
+                onClick={() => {
+                  this.setState({ hasError: false, error: null });
+                  window.location.reload();
+                }}
+              >
                 Try Again
               </button>
-              <button className="ghost-btn" onClick={() => { this.setState({ hasError: false, error: null }); window.location.href = "/"; }}>
+              <button
+                className="ghost-btn"
+                onClick={() => {
+                  this.setState({ hasError: false, error: null });
+                  window.location.href = "/";
+                }}
+              >
                 Go to Home
               </button>
             </div>

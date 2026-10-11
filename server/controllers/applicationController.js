@@ -7,9 +7,17 @@ import { isValidTransition, getNextStatuses } from "../models/Application.js";
 export const createOrUpdateApplication = async (req, res) => {
   try {
     const {
-      jobId, jobTitle, company, status, notes,
-      jobSnapshot, documentId, resumeVersionId, coverLetterVersionId,
-      followUpAt, nextAction,
+      jobId,
+      jobTitle,
+      company,
+      status,
+      notes,
+      jobSnapshot,
+      documentId,
+      resumeVersionId,
+      coverLetterVersionId,
+      followUpAt,
+      nextAction,
     } = req.body;
 
     if (!jobId) {
@@ -56,7 +64,7 @@ export const createOrUpdateApplication = async (req, res) => {
       const app = await Application.findOneAndUpdate(
         { _id: existing._id, user: req.user._id },
         { $set: update },
-        { new: true }
+        { new: true },
       );
 
       return res.json({ ok: true, application: app });
@@ -153,8 +161,13 @@ export const updateApplication = async (req, res) => {
   try {
     const { id } = req.params;
     const {
-      status, notes, nextAction, followUpAt,
-      documentId, resumeVersionId, coverLetterVersionId,
+      status,
+      notes,
+      nextAction,
+      followUpAt,
+      documentId,
+      resumeVersionId,
+      coverLetterVersionId,
       jobSnapshot,
     } = req.body;
 
@@ -188,7 +201,7 @@ export const updateApplication = async (req, res) => {
     const updated = await Application.findOneAndUpdate(
       { _id: id, user: req.user._id },
       { $set: update },
-      { new: true }
+      { new: true },
     );
 
     return res.json({ ok: true, application: updated });

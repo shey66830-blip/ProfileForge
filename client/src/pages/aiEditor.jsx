@@ -13,12 +13,7 @@ const presets = [
 // Model list lives in utils/aiModels.js (shared with resumeJobAnalysis).
 // Local select state uses the collision-free `provider::model` value.
 
-export default function AiEditor({
-  documents,
-  refreshDocuments,
-  setActiveDocument,
-  setPage,
-}) {
+export default function AiEditor({ documents, refreshDocuments, setActiveDocument, setPage }) {
   const [selectedId, setSelectedId] = useState(documents[0]?._id || "");
   const [instruction, setInstruction] = useState("");
   const [selectedModel, setSelectedModel] = useState(modelValue(DEFAULT_MODEL));
@@ -56,7 +51,7 @@ export default function AiEditor({
       selectedDoc._id,
       instruction,
       selectedModelDef.provider,
-      selectedModelDef.model
+      selectedModelDef.model,
     );
 
     setLoading(false);
@@ -78,8 +73,7 @@ export default function AiEditor({
           <p className="eyebrow">AI document editor</p>
           <h1>Improve your resume, CV, or biodata</h1>
           <p>
-            Choose a saved document, give editing instructions, and create a new
-            improved version.
+            Choose a saved document, give editing instructions, and create a new improved version.
           </p>
         </div>
 
@@ -92,7 +86,9 @@ export default function AiEditor({
         <section className="card empty-state">
           <h2>No documents to edit</h2>
           <p>Create a resume or CV first, then come back to improve it with AI.</p>
-          <button className="primary-btn" onClick={() => setPage("dashboard")}>Go to Dashboard</button>
+          <button className="primary-btn" onClick={() => setPage("dashboard")}>
+            Go to Dashboard
+          </button>
         </section>
       ) : (
         <section className="ai-editor-grid">
@@ -126,7 +122,10 @@ export default function AiEditor({
             {selectedDoc?.title?.includes("AI Edited") && (
               <div className="version-info">
                 <p className="eyebrow">Version History</p>
-                <p className="muted">This document was created by AI editing. The original version is still available in your dashboard.</p>
+                <p className="muted">
+                  This document was created by AI editing. The original version is still available
+                  in your dashboard.
+                </p>
               </div>
             )}
           </div>
@@ -176,11 +175,7 @@ export default function AiEditor({
 
             {error && <p className="error">{error}</p>}
 
-            <button
-              className="primary-btn ai-edit-btn"
-              onClick={handleAiEdit}
-              disabled={loading}
-            >
+            <button className="primary-btn ai-edit-btn" onClick={handleAiEdit} disabled={loading}>
               {loading ? "Creating improved version..." : "Apply AI Edit"}
             </button>
           </div>
@@ -190,10 +185,7 @@ export default function AiEditor({
             <h2>{selectedDoc?.data?.name || "Document"}</h2>
 
             <div className="mini-document ai-mini-document">
-              <pre>
-                {selectedDoc?.generatedText ||
-                  "Select a document to preview its content."}
-              </pre>
+              <pre>{selectedDoc?.generatedText || "Select a document to preview its content."}</pre>
             </div>
           </aside>
         </section>

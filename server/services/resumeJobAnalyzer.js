@@ -1,9 +1,7 @@
-import analyzeResume from "./aiResumeAnalyzer.js";
-import calculateATS from "./atsScoreEngine.js";
 import extractEligibility from "./eligibilityExtractor.js";
 import analyzeSkills from "./skillExtractor.js";
 import jobMatchingEngine, { default as jobMatchingEngineDefault } from "./jobMatchingEngine.js";
-import recommendationEngine, { default as recommendationEngineDefault } from "./recommendationEngine.js";
+import recommendationEngine from "./recommendationEngine.js";
 import { chatCompletion } from "./aiProvider.js";
 
 export function parseJobRequirements(text = "") {
@@ -20,22 +18,36 @@ export function parseJobRequirements(text = "") {
   // or qualification requirements are treated as required; skills framed as preferred/bonus/
   // optional are treated as preferred. If no framing is detected, default to required.
   // Detect sections like "Preferred: Node.js, AWS" and "Required: React, JavaScript".
-  const preferredSectionMatch = jobTextLower.match(/(?:preferred|optional|bonus|nice.to.have)\s*[:;]\s*([^.\n]+)/i);
-  const preferredList = preferredSectionMatch ? preferredSectionMatch[1].split(/[,\n]+/).map(s => s.trim().toLowerCase()).filter(Boolean) : [];
+  const preferredSectionMatch = jobTextLower.match(
+    /(?:preferred|optional|bonus|nice.to.have)\s*[:;]\s*([^.\n]+)/i,
+  );
+  const preferredList = preferredSectionMatch
+    ? preferredSectionMatch[1]
+        .split(/[,\n]+/)
+        .map((s) => s.trim().toLowerCase())
+        .filter(Boolean)
+    : [];
 
-  const requiredSectionMatch = jobTextLower.match(/(?:required|must|qualification)\s*[:;]\s*([^.\n]+)/i);
-  const requiredList = requiredSectionMatch ? requiredSectionMatch[1].split(/[,\n]+/).map(s => s.trim().toLowerCase()).filter(Boolean) : [];
+  const requiredSectionMatch = jobTextLower.match(
+    /(?:required|must|qualification)\s*[:;]\s*([^.\n]+)/i,
+  );
+  const requiredList = requiredSectionMatch
+    ? requiredSectionMatch[1]
+        .split(/[,\n]+/)
+        .map((s) => s.trim().toLowerCase())
+        .filter(Boolean)
+    : [];
 
   for (const skill of skills) {
     const skillLower = skill.toLowerCase();
 
     // Explicit preferred list wins.
-    const inPreferredList = preferredList.some(p =>
-      p === skillLower || p.includes(skillLower) || skillLower.includes(p)
+    const inPreferredList = preferredList.some(
+      (p) => p === skillLower || p.includes(skillLower) || skillLower.includes(p),
     );
 
-    const inRequiredList = requiredList.some(p =>
-      p === skillLower || p.includes(skillLower) || skillLower.includes(p)
+    const inRequiredList = requiredList.some(
+      (p) => p === skillLower || p.includes(skillLower) || skillLower.includes(p),
     );
 
     if (inPreferredList) {
@@ -143,38 +155,42 @@ export function buildMutableJobProfile({
 }
 
 export function computeResumeJobMatch({ resume, jobProfile, ats }) {
-  const match = (jobMatchingEngine && typeof jobMatchingEngine === 'function')
-    ? jobMatchingEngine({ resume, job: jobProfile, ats })
-    : (jobMatchingEngineDefault && typeof jobMatchingEngineDefault === 'function')
-      ? jobMatchingEngineDefault({ resume, job: jobProfile, ats })
-      : {
-          overall: 0,
-          skillMatch: 0,
-          experienceMatch: 0,
-          educationMatch: 0,
-          eligibilityMatch: 0,
-          locationMatch: 100,
-          atsScore: ats?.score || 0,
-          matchedSkills: [],
-          missingSkills: [],
-          missingRequired: [],
-          missingPreferred: [],
-          reasons: [],
-          requiredExperience: null,
-          candidateExperience: Number(resume?.estimatedExperience || 0),
-        };
+  const match =
+    jobMatchingEngine && typeof jobMatchingEngine === "function"
+      ? jobMatchingEngine({ resume, job: jobProfile, ats })
+      : jobMatchingEngineDefault && typeof jobMatchingEngineDefault === "function"
+        ? jobMatchingEngineDefault({ resume, job: jobProfile, ats })
+        : {
+            overall: 0,
+            skillMatch: 0,
+            experienceMatch: 0,
+            educationMatch: 0,
+            eligibilityMatch: 0,
+            locationMatch: 100,
+            atsScore: ats?.score || 0,
+            matchedSkills: [],
+            missingSkills: [],
+            missingRequired: [],
+            missingPreferred: [],
+            reasons: [],
+            requiredExperience: null,
+            candidateExperience: Number(resume?.estimatedExperience || 0),
+          };
 
-  const matchedSkills = (Array.isArray(jobProfile.skills) ? jobProfile.skills : [])
-    .filter(skill => {
+  const matchedSkills = (Array.isArray(jobProfile.skills) ? jobProfile.skills : []).filter(
+    (skill) => {
       if (!Array.isArray(resume.skills)) return false;
       return resume.skills.includes(skill);
-    });
+    },
+  );
 
-  const missingRequired = (Array.isArray(jobProfile.requiredSkills) ? jobProfile.requiredSkills : [])
-    .filter(skill => !Array.isArray(resume.skills) || !resume.skills.includes(skill));
+  const missingRequired = (
+    Array.isArray(jobProfile.requiredSkills) ? jobProfile.requiredSkills : []
+  ).filter((skill) => !Array.isArray(resume.skills) || !resume.skills.includes(skill));
 
-  const missingPreferred = (Array.isArray(jobProfile.preferredSkills) ? jobProfile.preferredSkills : [])
-    .filter(skill => !Array.isArray(resume.skills) || !resume.skills.includes(skill));
+  const missingPreferred = (
+    Array.isArray(jobProfile.preferredSkills) ? jobProfile.preferredSkills : []
+  ).filter((skill) => !Array.isArray(resume.skills) || !resume.skills.includes(skill));
 
   const recommendation = recommendationEngine({
     resume,
@@ -250,7 +266,6 @@ export async function analyzeWithLLM({
   resumeAnalysis,
   jobProfile,
   matchResult,
-  ats,
 }) {
   const systemPrompt = `You are a resume and job matching analyst.
 You receive structured resume data and a structured job profile, plus a deterministic match summary.
@@ -382,5 +397,5 @@ function ensureArray(value) {
   if (!Array.isArray(value)) {
     return [];
   }
-  return value.filter(item => typeof item === "string" && item.trim());
+  return value.filter((item) => typeof item === "string" && item.trim());
 }

@@ -8,7 +8,7 @@ export const protect = async (req, res, next) => {
     if (!token) {
       return res.status(401).json({
         ok: false,
-        message: "Not logged in"
+        message: "Not logged in",
       });
     }
 
@@ -19,7 +19,7 @@ export const protect = async (req, res, next) => {
     if (!user) {
       return res.status(401).json({
         ok: false,
-        message: "User not found"
+        message: "User not found",
       });
     }
 
@@ -28,7 +28,7 @@ export const protect = async (req, res, next) => {
   } catch {
     return res.status(401).json({
       ok: false,
-      message: "Invalid or expired token"
+      message: "Invalid or expired token",
     });
   }
 };

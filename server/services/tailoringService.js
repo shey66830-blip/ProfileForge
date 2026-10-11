@@ -197,7 +197,7 @@ Analyze the resume against this job description. Return a JSON array of improvem
         maxTokens: 4000,
       }),
       new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("AI request timed out")), AI_TIMEOUT_MS)
+        setTimeout(() => reject(new Error("AI request timed out")), AI_TIMEOUT_MS),
       ),
     ]);
 
@@ -323,7 +323,10 @@ export function computeDiff(before = "", after = "") {
         diff.push({ type: "added", text: afterLines[ai] });
         bi++;
         ai++;
-      } else if (laterInAfter !== -1 && (laterInBefore === -1 || laterInAfter - ai <= laterInBefore - bi)) {
+      } else if (
+        laterInAfter !== -1 &&
+        (laterInBefore === -1 || laterInAfter - ai <= laterInBefore - bi)
+      ) {
         // After has extra lines before matching — additions
         while (ai < laterInAfter) {
           diff.push({ type: "added", text: afterLines[ai] });

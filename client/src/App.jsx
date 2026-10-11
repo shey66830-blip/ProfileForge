@@ -1,7 +1,16 @@
 import React, { useEffect, useState, Suspense, lazy, createContext } from "react";
-import { BrowserRouter, Routes, Route, Navigate, useNavigate, useParams, useLocation } from "react-router-dom";
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  Navigate,
+  useNavigate,
+  useParams,
+  useLocation,
+} from "react-router-dom";
 
 import ParticleCanvas from "./components/ParticleCanvas.jsx";
+import DotFieldBackground from "./components/DotFieldBackground.jsx";
 import ErrorBoundary from "./components/ErrorBoundary.jsx";
 import { ToastProvider } from "./context/ToastContext.jsx";
 import Navbar from "./components/Navbar.jsx";
@@ -19,6 +28,7 @@ const Premium = lazy(() => import("./pages/premium.jsx"));
 const Profile = lazy(() => import("./pages/profile.jsx"));
 const SavedJobs = lazy(() => import("./pages/savedJobs.jsx"));
 const Applications = lazy(() => import("./pages/applications.jsx"));
+const Analytics = lazy(() => import("./pages/analytics.jsx"));
 const Subscription = lazy(() => import("./pages/subscription.jsx"));
 const Courses = lazy(() => import("./pages/courses.jsx"));
 const ResumeJobAnalysis = lazy(() => import("./pages/resumeJobAnalysis.jsx"));
@@ -30,12 +40,18 @@ const ReverseBoard = lazy(() => import("./pages/reverseBoard.jsx"));
 import { getCurrentUser, logoutUser } from "./services/authService.js";
 import { fetchDocuments } from "./services/documentService.js";
 import { checkPremiumStatus } from "./services/paymentService.js";
+import PremiumGate from "./components/PremiumGate.jsx";
 
 export const AppContext = createContext(null);
 
 function LoadingPlaceholder() {
   return (
-    <main className="container" style={{ minHeight: "50vh", display: "grid", placeItems: "center" }} role="status" aria-label="Loading">
+    <main
+      className="container"
+      style={{ minHeight: "50vh", display: "grid", placeItems: "center" }}
+      role="status"
+      aria-label="Loading"
+    >
       <div className="loading-spinner">
         <div className="spinner" aria-hidden="true" />
         <p>Loading…</p>
@@ -70,6 +86,18 @@ function GuestRoute({ user, authLoading, children }) {
 // would all render the resume builder.
 function BuilderRoute(props) {
   const { type } = useParams();
+  const ctx = React.useContext(AppContext);
+  // Biodata is a Premium feature — a free user reaching this URL directly
+  // sees the upgrade gate instead of the builder.
+  if (type === "biodata" && !ctx.isPremium) {
+    return (
+      <PremiumGate
+        required="premium"
+        currentPlan={ctx.plan}
+        feature="The Biodata Builder creates marriage-biodata documents with family and partner-preference sections."
+      />
+    );
+  }
   return <Builder type={type} {...props} />;
 }
 
@@ -116,140 +144,231 @@ function AppRoutes() {
 
   return (
     <>
-        <a href="#main-content" className="skip-link">Skip to main content</a>
-        <div className="aria-live-region" aria-live="polite" aria-atomic="true" id="aria-live" />
-        <ParticleCanvas />
-        <div className="app-shell">
-      <Navbar setPage={setPage} openBuilder={openBuilder} user={ctx.user} logout={handleLogout} />
+      <a href="#main-content" className="skip-link">
+        Skip to main content
+      </a>
+      <div className="aria-live-region" aria-live="polite" aria-atomic="true" id="aria-live" />
+      <ParticleCanvas />
+      <DotFieldBackground />
+      <div className="app-shell">
+        <Navbar setPage={setPage} openBuilder={openBuilder} user={ctx.user} logout={handleLogout} />
 
-      <main id="main-content" tabIndex="-1">
-      <Suspense fallback={<LoadingPlaceholder />}>
-      <Routes>
-        <Route path="/" element={<Home user={ctx.user} openBuilder={openBuilder} setPage={setPage} />} />
-        <Route path="/auth" element={<GuestRoute user={ctx.user} authLoading={authLoading}><Auth setUser={ctx.setUser} /></GuestRoute>} />
+        <main id="main-content" tabIndex="-1">
+          <Suspense fallback={<LoadingPlaceholder />}>
+            <Routes>
+              {/* Landing page: logged-in users only. Logged-out users are sent to /auth. */}
+              <Route
+                path="/"
+                element={
+                  <ProtectedRoute user={ctx.user} authLoading={authLoading}>
+                    <Home user={ctx.user} openBuilder={openBuilder} setPage={setPage} />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/auth"
+                element={
+                  <GuestRoute user={ctx.user} authLoading={authLoading}>
+                    <Auth setUser={ctx.setUser} />
+                  </GuestRoute>
+                }
+              />
 
-        <Route path="/profile" element={
-          <ProtectedRoute user={ctx.user} authLoading={authLoading}>
-            <Profile user={ctx.user} setUser={ctx.setUser} setPage={setPage} />
-          </ProtectedRoute>
-        } />
+              <Route
+                path="/profile"
+                element={
+                  <ProtectedRoute user={ctx.user} authLoading={authLoading}>
+                    <Profile user={ctx.user} setUser={ctx.setUser} setPage={setPage} />
+                  </ProtectedRoute>
+                }
+              />
 
-        <Route path="/premium" element={
-          <ProtectedRoute user={ctx.user} authLoading={authLoading}>
-            <Premium user={ctx.user} setUser={ctx.setUser} setPage={setPage} />
-          </ProtectedRoute>
-        } />
+              <Route
+                path="/premium"
+                element={
+                  <ProtectedRoute user={ctx.user} authLoading={authLoading}>
+                    <Premium user={ctx.user} setUser={ctx.setUser} setPage={setPage} />
+                  </ProtectedRoute>
+                }
+              />
 
-        <Route path="/dashboard" element={
-          <ProtectedRoute user={ctx.user} authLoading={authLoading}>
-            <Dashboard
-              documents={ctx.documents}
-              openBuilder={openBuilder}
-              openDocument={openDocument}
-              editDocument={editDocument}
-              setPage={setPage}
-              onDeleteDocument={(id) => ctx.setDocuments((prev) => prev.filter((d) => d._id !== id))}
-            />
-          </ProtectedRoute>
-        } />
+              <Route
+                path="/dashboard"
+                element={
+                  <ProtectedRoute user={ctx.user} authLoading={authLoading}>
+                    <Dashboard
+                      documents={ctx.documents}
+                      openBuilder={openBuilder}
+                      openDocument={openDocument}
+                      editDocument={editDocument}
+                      setPage={setPage}
+                      onDeleteDocument={(id) =>
+                        ctx.setDocuments((prev) => prev.filter((d) => d._id !== id))
+                      }
+                    />
+                  </ProtectedRoute>
+                }
+              />
 
-        <Route path="/builder/:type" element={
-          <ProtectedRoute user={ctx.user} authLoading={authLoading}>
-            <BuilderRoute
-              existingDocument={ctx.activeDocument}
-              refreshDocuments={ctx.refreshDocuments}
-              setActiveDocument={ctx.setActiveDocument}
-              setPage={setPage}
-            />
-          </ProtectedRoute>
-        } />
+              <Route
+                path="/builder/:type"
+                element={
+                  <ProtectedRoute user={ctx.user} authLoading={authLoading}>
+                    <BuilderRoute
+                      existingDocument={ctx.activeDocument}
+                      refreshDocuments={ctx.refreshDocuments}
+                      setActiveDocument={ctx.setActiveDocument}
+                      setPage={setPage}
+                    />
+                  </ProtectedRoute>
+                }
+              />
 
-        <Route path="/output" element={
-          <ProtectedRoute user={ctx.user} authLoading={authLoading}>
-            {ctx.activeDocument ? (
-              <Output document={ctx.activeDocument} editDocument={editDocument} setPage={setPage} />
-            ) : (
-              <Navigate to="/dashboard" replace />
-            )}
-          </ProtectedRoute>
-        } />
+              <Route
+                path="/output"
+                element={
+                  <ProtectedRoute user={ctx.user} authLoading={authLoading}>
+                    {ctx.activeDocument ? (
+                      <Output
+                        document={ctx.activeDocument}
+                        editDocument={editDocument}
+                        setPage={setPage}
+                      />
+                    ) : (
+                      <Navigate to="/dashboard" replace />
+                    )}
+                  </ProtectedRoute>
+                }
+              />
 
-        <Route path="/subscription" element={<ProtectedRoute user={ctx.user} authLoading={authLoading}><Subscription /></ProtectedRoute>} />
-        <Route path="/courses" element={<ProtectedRoute user={ctx.user} authLoading={authLoading}><Courses /></ProtectedRoute>} />
-        <Route path="/applications" element={
-          <ProtectedRoute user={ctx.user} authLoading={authLoading}>
-            <Applications setPage={setPage} />
-          </ProtectedRoute>
-        } />
+              <Route
+                path="/subscription"
+                element={
+                  <ProtectedRoute user={ctx.user} authLoading={authLoading}>
+                    <Subscription />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/analytics"
+                element={
+                  <ProtectedRoute user={ctx.user} authLoading={authLoading}>
+                    <Analytics />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/courses"
+                element={
+                  <ProtectedRoute user={ctx.user} authLoading={authLoading}>
+                    <Courses />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/applications"
+                element={
+                  <ProtectedRoute user={ctx.user} authLoading={authLoading}>
+                    <Applications setPage={setPage} />
+                  </ProtectedRoute>
+                }
+              />
 
-        <Route path="/resume-job-analysis" element={
-          <ProtectedRoute user={ctx.user} authLoading={authLoading}>
-            <ResumeJobAnalysis
-              documents={ctx.documents}
-              onDocumentsChange={ctx.refreshDocuments}
-            />
-          </ProtectedRoute>
-        } />
+              <Route
+                path="/resume-job-analysis"
+                element={
+                  <ProtectedRoute user={ctx.user} authLoading={authLoading}>
+                    <ResumeJobAnalysis
+                      documents={ctx.documents}
+                      onDocumentsChange={ctx.refreshDocuments}
+                    />
+                  </ProtectedRoute>
+                }
+              />
 
-        <Route path="/profile-builder" element={
-          <ProtectedRoute user={ctx.user} authLoading={authLoading}>
-            <ProfileBuilder />
-          </ProtectedRoute>
-        } />
+              <Route
+                path="/profile-builder"
+                element={
+                  <ProtectedRoute user={ctx.user} authLoading={authLoading}>
+                    <ProfileBuilder />
+                  </ProtectedRoute>
+                }
+              />
 
-        <Route path="/tailoring" element={
-          <ProtectedRoute user={ctx.user} authLoading={authLoading}>
-            <Tailoring />
-          </ProtectedRoute>
-        } />
+              <Route
+                path="/tailoring"
+                element={
+                  <ProtectedRoute user={ctx.user} authLoading={authLoading}>
+                    <Tailoring />
+                  </ProtectedRoute>
+                }
+              />
 
-        <Route path="/export-ats" element={
-          <ProtectedRoute user={ctx.user} authLoading={authLoading}>
-            <ExportATS />
-          </ProtectedRoute>
-        } />
+              <Route
+                path="/export-ats"
+                element={
+                  <ProtectedRoute user={ctx.user} authLoading={authLoading}>
+                    <ExportATS />
+                  </ProtectedRoute>
+                }
+              />
 
-        <Route path="/reverse-board" element={
-          <ProtectedRoute user={ctx.user} authLoading={authLoading}>
-            <ReverseBoard />
-          </ProtectedRoute>
-        } />
+              <Route
+                path="/reverse-board"
+                element={
+                  <ProtectedRoute user={ctx.user} authLoading={authLoading}>
+                    <ReverseBoard />
+                  </ProtectedRoute>
+                }
+              />
 
-        <Route path="/saved-jobs" element={
-          <ProtectedRoute user={ctx.user} authLoading={authLoading}>
-            <SavedJobs setPage={setPage} />
-          </ProtectedRoute>
-        } />
+              <Route
+                path="/saved-jobs"
+                element={
+                  <ProtectedRoute user={ctx.user} authLoading={authLoading}>
+                    <SavedJobs setPage={setPage} />
+                  </ProtectedRoute>
+                }
+              />
 
-        <Route path="/jobs" element={
-          <ProtectedRoute user={ctx.user} authLoading={authLoading}>
-            <JobSearch documents={ctx.documents} />
-          </ProtectedRoute>
-        } />
+              <Route
+                path="/jobs"
+                element={
+                  <ProtectedRoute user={ctx.user} authLoading={authLoading}>
+                    <JobSearch documents={ctx.documents} />
+                  </ProtectedRoute>
+                }
+              />
 
-        <Route path="/matchmaking" element={
-          <ProtectedRoute user={ctx.user} authLoading={authLoading}>
-            <Matchmaking documents={ctx.documents} setPage={setPage} />
-          </ProtectedRoute>
-        } />
+              <Route
+                path="/matchmaking"
+                element={
+                  <ProtectedRoute user={ctx.user} authLoading={authLoading}>
+                    <Matchmaking documents={ctx.documents} setPage={setPage} />
+                  </ProtectedRoute>
+                }
+              />
 
-        <Route path="/ai-editor" element={
-          <ProtectedRoute user={ctx.user} authLoading={authLoading}>
-            <AiEditor
-              documents={ctx.documents}
-              refreshDocuments={ctx.refreshDocuments}
-              setActiveDocument={ctx.setActiveDocument}
-              setPage={setPage}
-            />
-          </ProtectedRoute>
-        } />
+              <Route
+                path="/ai-editor"
+                element={
+                  <ProtectedRoute user={ctx.user} authLoading={authLoading}>
+                    <AiEditor
+                      documents={ctx.documents}
+                      refreshDocuments={ctx.refreshDocuments}
+                      setActiveDocument={ctx.setActiveDocument}
+                      setPage={setPage}
+                    />
+                  </ProtectedRoute>
+                }
+              />
 
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-      </Suspense>
-      </main>
-    </div>
-      </>
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </Suspense>
+        </main>
+      </div>
+    </>
   );
 }
 
@@ -300,12 +419,14 @@ export default function App() {
       return;
     }
     let cancelled = false;
-    checkPremiumStatus().then(r => {
+    checkPremiumStatus().then((r) => {
       if (cancelled || !r.ok) return;
       setPlan(r.plan || "free");
       setPremiumExpiry(r.expiry || null);
     });
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [user]);
 
   async function refreshPlan() {
@@ -318,9 +439,16 @@ export default function App() {
     if (r.ok) {
       setPlan(r.plan || "free");
       setPremiumExpiry(r.expiry || null);
-        setUser(prev => prev
-        ? { ...prev, plan: r.plan || "free", premium: !!r.premium, premiumExpiry: r.expiry || null }
-        : prev);
+      setUser((prev) =>
+        prev
+          ? {
+              ...prev,
+              plan: r.plan || "free",
+              premium: !!r.premium,
+              premiumExpiry: r.expiry || null,
+            }
+          : prev,
+      );
     }
     return r;
   }
@@ -328,23 +456,30 @@ export default function App() {
   return (
     <ToastProvider>
       <AppContext.Provider
-      value={{
-        user, setUser,
-        authLoading,
-        documents, setDocuments,
-        activeDocument, setActiveDocument,
-        builderType, setBuilderType,
-        refreshDocuments,
-        plan, premiumExpiry,
-        isPremium: plan === "premium" || plan === "pro",
-        isPro: plan === "pro",
-        refreshPlan,
-      }}
-    >
-      <BrowserRouter>
-        <ErrorBoundary><AppRoutes /></ErrorBoundary>
-      </BrowserRouter>
-    </AppContext.Provider>
-      </ToastProvider>
+        value={{
+          user,
+          setUser,
+          authLoading,
+          documents,
+          setDocuments,
+          activeDocument,
+          setActiveDocument,
+          builderType,
+          setBuilderType,
+          refreshDocuments,
+          plan,
+          premiumExpiry,
+          isPremium: plan === "premium" || plan === "pro",
+          isPro: plan === "pro",
+          refreshPlan,
+        }}
+      >
+        <BrowserRouter>
+          <ErrorBoundary>
+            <AppRoutes />
+          </ErrorBoundary>
+        </BrowserRouter>
+      </AppContext.Provider>
+    </ToastProvider>
   );
 }

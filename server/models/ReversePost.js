@@ -68,7 +68,7 @@ const reversePostSchema = new mongoose.Schema(
     // Denormalized count so the board can sort by demand without a lookup.
     inquiryCount: { type: Number, default: 0, min: 0 },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 // One post per user — this is "your ad", not a list of ads.

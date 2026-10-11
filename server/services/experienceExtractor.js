@@ -6,7 +6,6 @@
 import { normalizeText } from "../utils/textCleaner.js";
 
 const EXPERIENCE_TYPES = [
-
   "internship",
   "intern",
   "full time",
@@ -17,12 +16,10 @@ const EXPERIENCE_TYPES = [
   "research",
   "teaching",
   "training",
-  "apprenticeship"
-
+  "apprenticeship",
 ];
 
 const LEADERSHIP_KEYWORDS = [
-
   "leader",
   "lead",
   "head",
@@ -32,24 +29,20 @@ const LEADERSHIP_KEYWORDS = [
   "coordinator",
   "mentor",
   "manager",
-  "founder"
-
+  "founder",
 ];
 
 const PROJECT_KEYWORDS = [
-
   "project",
   "projects",
   "developed",
   "built",
   "created",
   "implemented",
-  "designed"
-
+  "designed",
 ];
 
 const ACHIEVEMENT_KEYWORDS = [
-
   "award",
   "winner",
   "achievement",
@@ -58,114 +51,83 @@ const ACHIEVEMENT_KEYWORDS = [
   "hackathon",
   "competition",
   "rank",
-  "medal"
-
+  "medal",
 ];
 
-function extractYears(text){
+function extractYears(text) {
+  const matches = [
+    ...(text.match(/\d+\+?\s+years?/gi) || []),
+    ...(text.match(/\d+\+?\s+months?/gi) || []),
+  ];
 
-    const matches=[
-        ...(text.match(/\d+\+?\s+years?/gi)||[]),
-        ...(text.match(/\d+\+?\s+months?/gi)||[])
-    ];
-
-    return [...new Set(matches)];
-
+  return [...new Set(matches)];
 }
 
-function extractExperienceTypes(text){
+function extractExperienceTypes(text) {
+  const lower = normalizeText(text);
 
-    const lower=normalizeText(text);
-
-    return EXPERIENCE_TYPES.filter(type=>
-        lower.includes(normalizeText(type))
-    );
-
+  return EXPERIENCE_TYPES.filter((type) => lower.includes(normalizeText(type)));
 }
 
-function extractLeadership(text){
+function extractLeadership(text) {
+  const lower = normalizeText(text);
 
-    const lower=normalizeText(text);
-
-    return LEADERSHIP_KEYWORDS.filter(word=>
-        lower.includes(normalizeText(word))
-    );
-
+  return LEADERSHIP_KEYWORDS.filter((word) => lower.includes(normalizeText(word)));
 }
 
-function extractProjects(text){
+function extractProjects(text) {
+  const lower = normalizeText(text);
 
-    const lower=normalizeText(text);
-
-    return PROJECT_KEYWORDS.filter(word=>
-        lower.includes(normalizeText(word))
-    );
-
+  return PROJECT_KEYWORDS.filter((word) => lower.includes(normalizeText(word)));
 }
 
-function extractAchievements(text){
+function extractAchievements(text) {
+  const lower = normalizeText(text);
 
-    const lower=normalizeText(text);
-
-    return ACHIEVEMENT_KEYWORDS.filter(word=>
-        lower.includes(normalizeText(word))
-    );
-
+  return ACHIEVEMENT_KEYWORDS.filter((word) => lower.includes(normalizeText(word)));
 }
 
-function estimateExperience(text){
+function estimateExperience(text) {
+  const lower = text.toLowerCase();
 
-    const lower=text.toLowerCase();
+  if (lower.includes("10 years")) return 10;
+  if (lower.includes("9 years")) return 9;
+  if (lower.includes("8 years")) return 8;
+  if (lower.includes("7 years")) return 7;
+  if (lower.includes("6 years")) return 6;
+  if (lower.includes("5 years")) return 5;
+  if (lower.includes("4 years")) return 4;
+  if (lower.includes("3 years")) return 3;
+  if (lower.includes("2 years")) return 2;
+  if (lower.includes("1 year")) return 1;
 
-    if(lower.includes("10 years")) return 10;
-    if(lower.includes("9 years")) return 9;
-    if(lower.includes("8 years")) return 8;
-    if(lower.includes("7 years")) return 7;
-    if(lower.includes("6 years")) return 6;
-    if(lower.includes("5 years")) return 5;
-    if(lower.includes("4 years")) return 4;
-    if(lower.includes("3 years")) return 3;
-    if(lower.includes("2 years")) return 2;
-    if(lower.includes("1 year")) return 1;
+  if (lower.includes("intern")) return 0.5;
 
-    if(lower.includes("intern"))
-        return 0.5;
+  if (lower.includes("fresher")) return 0;
 
-    if(lower.includes("fresher"))
-        return 0;
-
-    return 0;
-
+  return 0;
 }
 
-export default function analyzeExperience(text=""){
+export default function analyzeExperience(text = "") {
+  return {
+    estimatedYears: estimateExperience(text),
 
-    return{
+    duration: extractYears(text),
 
-        estimatedYears:estimateExperience(text),
+    experienceTypes: extractExperienceTypes(text),
 
-        duration:extractYears(text),
+    leadership: extractLeadership(text),
 
-        experienceTypes:extractExperienceTypes(text),
+    projectKeywords: extractProjects(text),
 
-        leadership:extractLeadership(text),
+    achievements: extractAchievements(text),
 
-        projectKeywords:extractProjects(text),
+    hasInternship: normalizeText(text).includes("intern"),
 
-        achievements:extractAchievements(text),
+    hasResearch: normalizeText(text).includes("research"),
 
-        hasInternship:
-            normalizeText(text).includes("intern"),
+    hasVolunteer: normalizeText(text).includes("volunteer"),
 
-        hasResearch:
-            normalizeText(text).includes("research"),
-
-        hasVolunteer:
-            normalizeText(text).includes("volunteer"),
-
-        hasLeadership:
-            extractLeadership(text).length>0
-
-    };
-
+    hasLeadership: extractLeadership(text).length > 0,
+  };
 }

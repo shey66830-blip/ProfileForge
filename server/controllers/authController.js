@@ -110,6 +110,20 @@ export const me = async (req, res) => {
     user: req.user,
   });
 };
+
+// Toggle the Reverse Job Board's hiring mode. On: the user acts as a
+// company (Browse talent + apply to hire). Off: normal job-seeker view.
+export const setHiringMode = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id || req.user.id);
+    if (!user) return res.json({ ok: false, message: "User not found" });
+    user.hiringMode = !!req.body.hiringMode;
+    await user.save();
+    res.json({ ok: true, hiringMode: user.hiringMode });
+  } catch (err) {
+    res.json({ ok: false, message: err.message });
+  }
+};
 export const updateProfile = async (req, res) => {
   try {
     const { name, username } = req.body;
@@ -122,7 +136,17 @@ export const updateProfile = async (req, res) => {
       user.username = username;
     }
     await user.save();
-    res.json({ ok: true, user: { id: user._id, name: user.name, username: user.username, email: user.email, plan: user.plan || "free" } });
+    res.json({
+      ok: true,
+      user: {
+        id: user._id,
+        name: user.name,
+        username: user.username,
+        email: user.email,
+        plan: user.plan || "free",
+        hiringMode: !!user.hiringMode,
+      },
+    });
   } catch (err) {
     res.status(500).json({ ok: false, message: err.message });
   }

@@ -22,9 +22,7 @@ export function cleanResumeText(text = "") {
 
   const lower = cleaned.toLowerCase();
 
-  const tokens = lower
-    .split(/[\s,.;:/()|[\]{}]+/)
-    .filter(Boolean);
+  const tokens = lower.split(/[\s,.;:/()|[\]{}]+/).filter(Boolean);
 
   const lines = cleaned
     .split("\n")

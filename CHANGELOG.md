@@ -6,31 +6,44 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased] — Reverse Job Board (2026-09-12)
 
+### Hiring mode (company-side gate)
+
+- `Browse talent` and `apply to hire` are now **hiring-mode-only**: hidden in the normal (worker) view.
+- New `hiringMode` flag on User (default off) + `PUT /api/auth/hiring-mode` toggle; `/api/auth/me` reflects it.
+- Enforced server-side: `GET /api/reverse/board` and `POST /api/reverse/inquiries` reject non-hiring-mode users.
+- Page header has a `🏢 Hiring mode ON/OFF` toggle; workers land on `My post`; the board tab and its data fetch only exist while the mode is on.
+
 ### New Feature
+
 - **Reverse job board** (`/reverse-board`): workers post "here's exactly what I want to work on and why" and companies (other users) apply to hire them — flipping the normal job-board dynamic.
 
 **Server**
+
 - `server/models/ReversePost.js` — one post per user (unique index), headline/why/skills, work mode, employment type, locations, salary, availability, portfolio; lifecycle `draft → published → paused → closed`; denormalized `inquiryCount` for board sorting; `toPublicPost()` whitelist that never leaks the owner's account email.
 - `server/models/ReverseInquiry.js` — hiring-side application to a worker; unique index on `(post, fromUser)` (no spam); status `new → accepted | declined`; `toOwnerView()` hides the inquirer's email until accepted.
 - `server/controllers/reverseBoardController.js` + `server/routes/reverseBoardRoutes.js` — endpoints mounted at `/api/reverse`: `GET/PUT /me`, `POST /me/status/:status`, `GET /board` (skill/work-mode/employment-type filters; case-insensitive skill match with regex escaping), `POST /inquiries`, `GET /inquiries/received|sent`, `POST /inquiries/:id/respond` (accept reveals contact email; decline; single response enforced).
 - Zod schemas `reversePostSchema`, `reverseInquirySchema`, `reverseInquiryActionSchema` in `server/middleware/validate.js`; all routes behind `protect`.
 
 **Client**
+
 - `client/src/pages/reverseBoard.jsx` — 4-tab page: Browse talent (card grid + skill/work-mode filters + apply-to-hire modal), My post (editor with publish/pause/close/unpublish), Inquiries inbox (accept reveals contact), Sent.
 - `client/src/services/reverseBoardApi.js` — API service.
 - Route `/reverse-board` (lazy) in `App.jsx`; navbar entry "🔄 Reverse".
 
 **Privacy rules enforced**
+
 - Board/public views never include the owner's user document or account email.
 - Inquirer email is only revealed to the worker after the worker accepts; worker email never returned by any endpoint (inquirer replies via the accepted contact the worker chooses to share).
 
 ### Tests
+
 - `server/reverseBoard.test.js` — 32 tests: schema shape, enums, unique indexes, skill setter dedup/cap, public-view sanitization (no email/password/`user` leak), validation schemas.
 - Full suite: 257 server tests, 9 client tests, all green.
 
 ## [Unreleased] — Milestone 7 Accessibility & Performance (2026-09-09)
 
 ### Accessibility Improvements
+
 - Added global focus styles with visible focus rings for keyboard navigation
 - Added skip-to-content link at the top of the page
 - Added aria-live region for dynamic screen reader announcements
@@ -41,15 +54,18 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 - Added prefers-reduced-motion CSS media query already existed; verified it covers all decorative animations
 
 ### Performance Improvements
+
 - Converted all 15 page imports to route-level `React.lazy()` code splitting
 - Added `<Suspense>` boundary with loading placeholder around routes
 - Bundle split: main chunk 202 KB + 17 page-specific chunks (largest: output 985 KB including html2pdf)
 - Total dist: 1.5 MB (was monolithic before splitting)
 
 ### Bug Fixes
+
 - Fixed duplicate `</Routes>` closing tag in App.jsx that was a latent JSX parse error
 
 ### Files Changed
+
 - `client/src/App.jsx` — lazy imports, Suspense boundary, duplicate tag fix
 - `client/src/utils/announce.js` — new live-announcement utility
 - `client/src/styles/global.css` — a11y CSS additions (focus, skip-link, reduced-motion)
@@ -57,6 +73,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 ## [Unreleased] — Milestone 6 Application Tracking (2026-09-09)
 
 ### Extended Application Model
+
 - Updated `server/models/Application.js` with:
   - **Controlled status enum**: saved → preparing → applied → screening → interview → offer → accepted (terminal); rejected/withdrawn can re-apply to saved
   - **Job snapshot**: frozen copy of job data (title, company, location, source, description, salary, applyUrl, skills) at creation time
@@ -66,6 +83,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
   - **Indexes**: added `{ user, status }` for dashboard queries and `{ user, followUpAt }` for follow-up reminders
 
 ### Status Transition Enforcement
+
 - `isValidTransition(from, to)` — validates transitions against a rules map:
   - `saved → preparing, applied, withdrawn`
   - `preparing → applied, saved, withdrawn`
@@ -80,6 +98,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 - Auto-sets `appliedAt` and `submittedAt` on the applied transition
 
 ### Extended Application API
+
 - `POST /api/applications` — create or update with validation
   - Accepts jobSnapshot, documentId, resumeVersionId, coverLetterVersionId
   - Enforces status transitions on update
@@ -94,10 +113,12 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 - `GET /api/applications/transitions/:status` — get valid next statuses for UI
 
 ### Validation Schemas
+
 - `applicationCreateSchema` — validates create payload (jobId required; status enum enforced; jobSnapshot with nested fields)
 - `applicationUpdateSchema` — validates update payload (status enum enforced; notes, nextAction, document IDs optional)
 
 ### Tests
+
 - `server/application.test.js` — 47 tests covering:
   - Status transitions (21 valid transitions, 4 invalid, same-status no-op, unknown status)
   - getNextStatuses (saved, accepted terminal, rejected re-apply, unknown)
@@ -107,6 +128,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
   - Document version linkage (all fields present in schema)
 
 ### Preserved Behavior
+
 - Existing application CRUD still works (upsert on jobId)
 - Existing client UI unchanged
 - All existing tests still pass (178 server + 9 client)
@@ -115,6 +137,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 ## [Unreleased] — Milestone 5 Fact-Grounded Tailoring (2026-09-09)
 
 ### DocumentVersion Model
+
 - Added `server/models/DocumentVersion.js` — immutable version snapshots:
   - Stores base (original) and tailored versions for audit trail
   - Append-only: once created, versions are never modified
@@ -122,6 +145,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
   - Indexed by document + versionType for efficient lookup
 
 ### Tailoring Service
+
 - Added `server/services/tailoringService.js` — structured suggestion engine:
   - **Structured suggestions**: each has section, action (add/update/remove), before, after, sourceFact, reasoning, confidence
   - **No opaque replacement**: returns individual reviewable changes, not a full document
@@ -132,6 +156,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
   - **Suggestion application**: applies accepted suggestions to create new document, skips stale ones (before text no longer matches)
 
 ### Tailoring API
+
 - `POST /api/tailoring/suggest` — generate structured suggestions (rate-limited, uses AI)
   - Accepts documentId, jobDescription, jobTitle, jobCompany, instruction, provider, model
   - Saves base version snapshot on first call
@@ -143,10 +168,12 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 - `POST /api/tailoring/revert/:documentId` — revert document to a previous version
 
 ### Validation Schemas
+
 - `tailoringRequestSchema` — validates suggest request (documentId, jobDescription required; max lengths enforced)
 - `tailoringApplySchema` — validates apply request (documentId + suggestions array with id + accepted boolean)
 
 ### Tests
+
 - `server/tailoringService.test.js` — 26 tests covering:
   - Prompt injection defense (12 patterns: ignore instructions, role-play, system markers, [INST] tags)
   - Input bounds (truncation to max lengths)
@@ -155,6 +182,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
   - Constants validation (max lengths, max suggestions)
 
 ### Preserved Behavior
+
 - Existing AI edit endpoint (editDocument) still works unchanged
 - All existing tests still pass (152 server + 9 client)
 - Client build still succeeds
@@ -162,6 +190,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 ## [Unreleased] — Milestone 4 Explainable Job Matching (2026-09-09)
 
 ### Job Normalizer
+
 - Added `server/services/jobNormalizer.js` — standardized job shape across all 7 sources:
   - Canonical fields: source, sourceJobId, id, canonicalUrl, title, company, description, skills, location, country, workMode, employmentType, category, publishedAt, fetchedAt, expiresAt, applyUrl, salary, remote
   - `inferWorkMode()` — derives remote/hybrid/onsite from location text and remote flag
@@ -171,6 +200,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
   - `normalizeText()` — lowercases, strips parenthetical and special chars for title/company comparison
 
 ### Deduplication
+
 - `deduplicateJobs(jobs)` — removes duplicates by three keys:
   1. Same source + sourceJobId (always a dupe)
   2. Same normalized URL (cross-source link to same posting)
@@ -178,6 +208,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 - Handles edge cases: empty URLs, empty titles, cross-source duplicates
 
 ### Server-Side Filtering, Pagination, Sorting
+
 - `filterAndPaginate(jobs, params)` — full server-side pipeline:
   - Free-text search across title + company + description + location
   - Filters: workMode, employmentType, category, source
@@ -186,6 +217,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
   - Staleness: excludes expired jobs by default (includeStale option)
 
 ### Explainable Match Engine
+
 - Added `server/services/explainableMatcher.js` — wraps existing jobMatchingEngine with:
   - **Required vs preferred skills**: classifies skills using sentence-level context patterns ("must have", "required" → required; "nice to have", "preferred", "bonus" → preferred)
   - **Evidence tracking**: finds which resume section (skills/experience/projects/education/certifications) supports each matched skill
@@ -196,6 +228,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
   - **Legacy compatibility**: returns all fields from the original engine
 
 ### Tests
+
 - `server/jobNormalizer.test.js` — 41 tests covering:
   - Deduplication (same ID, cross-source URL, title+company, distinct jobs, empty input)
   - Staleness detection (past/future/null expiresAt)
@@ -214,6 +247,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
   - Explainable match (overall score, score components, required/preferred split, evidence, reasons, determinism, legacy fields, edge cases)
 
 ### Preserved Behavior
+
 - Existing job search UI and API behavior unchanged
 - Existing matching engine (jobMatchingEngine.js) untouched — explainableMatcher wraps it
 - All existing tests still pass
@@ -222,6 +256,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 ## [Unreleased] — Milestone 3 ATS-Safe Export (2026-09-09)
 
 ### ATS Validation Engine
+
 - Added `server/services/atsValidator.js` — validates resume text against ATS parsing rules:
   - **Section order**: detects sections via 35+ heading variants, warns if out of standard order
   - **Missing sections**: warns about missing contact, experience, education, skills
@@ -233,6 +268,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
   - Returns actionable warnings with severity (info/warning), not a pass/fail grade
 
 ### ATS-Safe Template Generator
+
 - Added `server/services/atsTemplate.js` — deterministic, single-column output:
   - `generateATSHTML(profile)` — clean HTML with standard headings, no tables/columns
   - `generateATSPlainText(profile)` — plain text with standard section labels
@@ -240,10 +276,12 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
   - No graphics, no special characters, no column layouts — what ATS parsers can reliably read
 
 ### Plain-Text Preview
+
 - Added `generatePlainTextPreview()` — normalizes heading case, adds section markers
 - Shows users exactly what the ATS would "see" before downloading
 
 ### Export API
+
 - `POST /api/export/ats-html` — generates ATS-safe HTML + plain-text + validation warnings
   - Accepts `documentId` (builds from Document data) or uses user's canonical profile
   - Returns `{ html, plainText, textPreview, validation }` in one call
@@ -252,6 +290,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 - Both endpoints require authentication
 
 ### Tests
+
 - `server/atsValidator.test.js` — 23 tests covering:
   - Well-structured resume passes with no warnings
   - Section detection and ordering
@@ -264,6 +303,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
   - Edge cases (empty text, no sections)
 
 ### Preserved Behavior
+
 - Existing client-side html2pdf.js export still works unchanged
 - All existing tests still pass (66 server + 9 client)
 - Client build still succeeds
@@ -271,6 +311,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 ## [Unreleased] — Milestone 2 Canonical Profile (2026-09-09)
 
 ### Canonical Profile Model
+
 - Added `server/models/Profile.js` — Mongoose schema with structured sections:
   - `contact` (name, email, phone, location) with provenance
   - `summary` with provenance
@@ -288,6 +329,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 - One profile per user (unique index on `user`)
 
 ### Profile API
+
 - `GET /api/profile` — get or auto-create canonical profile
 - `PUT /api/profile` — update canonical profile sections (rejected for draft status)
 - `DELETE /api/profile` — delete profile
@@ -297,12 +339,14 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 - `POST /api/profile/suggestions/dismiss-all` — dismiss all pending suggestions
 
 ### Import-Review Flow
+
 - Upload resume → extracted fields create a `draft` profile
 - User reviews the draft (all imported items have `verified: false`)
 - User calls `POST /api/profile/promote` to confirm → becomes `canonical`
 - If canonical already exists, draft merges into it (verified data is never overwritten)
 
 ### AI Suggestion Guardrails
+
 - AI suggestions live in a separate `suggestions[]` array — never auto-applied
 - Accepting a suggestion moves it into the profile section with `source: "ai_suggestion"` and `verified: false`
 - **Contact information is always user-only** — AI suggestions cannot modify contact fields
@@ -310,12 +354,14 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 - **Skills are additive** — AI can suggest new skills but never removes verified ones
 
 ### Validation Schemas
+
 - `profileUpdateSchema` — validates all profile section updates with length limits
 - `profileImportSchema` — validates import payload (requires documentId)
 - `profileSuggestionActionSchema` — validates suggestion accept/reject
 - `profilePromoteSchema` — validates promote request (no body needed)
 
 ### Tests
+
 - `server/profile.test.js` — 31 tests covering:
   - Profile model schema structure and defaults
   - Provenance behavior (imported/user/ai_suggestion)
@@ -324,6 +370,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
   - Edge cases (empty skills, invalid workMode, oversized summary)
 
 ### Preserved Behavior
+
 - Existing Document model and CRUD routes unchanged
 - All existing tests still pass (66 server + 9 client)
 - Client build still succeeds
@@ -331,6 +378,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 ## [Unreleased] — Milestone 1 Quality & Security (2026-09-09)
 
 ### Quality Foundation
+
 - Added root `package.json` with monorepo scripts (lint, format, test, build, verify)
 - Added ESLint 9 with flat config (`eslint.config.js`) — zero errors, zero warnings on modified files
 - Added Prettier 3 with `.prettierrc` — consistent formatting across client and server
@@ -339,6 +387,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 - Added GitHub Actions CI pipeline (`.github/workflows/ci.yml`) — lint, test, build on Node 18/20
 
 ### Security Hardening
+
 - **JSON body-size limit**: Express `json()` limited to 1MB (was unlimited)
 - **Production startup checks**: Server exits with clear error if JWT_SECRET or MONGO_URI missing in production; JWT_SECRET must be ≥32 chars
 - **Upload hardening**:
@@ -352,6 +401,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 - **Validate middleware fix**: Fixed Zod v4 compatibility (`error.issues` instead of `error.errors`)
 
 ### Tests Added
+
 - `server/validation.test.js` — 15 tests for Zod schema validation (signup, login, document, AI edit, analysis, compare)
 - `server/skillDatabase.test.js` — 10 tests for unified skill matcher (case insensitivity, substring prevention, DBA skills, short-token rejection)
 - `server/security.test.js` — 10 tests for security scenarios (AI allowlist, input validation, prototype pollution, SQL/XSS injection)
@@ -360,16 +410,19 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 ## [Unreleased] — Milestone 0 Baseline (2026-09-09)
 
 ### Baseline Inspection
+
 - Full codebase audit: 15 client pages, 9 server models, 9 route files, 8 controllers, 18 services
 - Client build verified: Vite builds clean (exit 0), ~392KB gzipped
 - Server modules verified: all 8 route modules + controller imports load cleanly
 - No existing tests, no README, no CHANGELOG, no linting, no CI
 
 ### Documentation
+
 - Added `README.md` — setup, environment variables, architecture, API reference, known limitations
 - Added `CHANGELOG.md` — this file
 
 ### Known Issues Identified
+
 - No unit or integration tests anywhere in the codebase
 - No ESLint/Prettier configuration
 - No CI/CD pipeline
@@ -382,6 +435,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 - Client bundle ~392KB gzipped (no code splitting)
 
 ### Previously Implemented (prior threads)
+
 - OpenRouter/Experiential Labs integration with Claude Fable 5.1 + GPT-6 Astra
 - Resume + JD analysis with deterministic match + qualitative LLM layer
 - Model comparison view (two AI models side-by-side)

@@ -1,6 +1,11 @@
 import express from "express";
 import { protect } from "../middleware/authMiddleware.js";
-import { validate, profileUpdateSchema, profileImportSchema, profileSuggestionActionSchema } from "../middleware/validate.js";
+import {
+  validate,
+  profileUpdateSchema,
+  profileImportSchema,
+  profileSuggestionActionSchema,
+} from "../middleware/validate.js";
 import {
   getProfile,
   updateProfile,

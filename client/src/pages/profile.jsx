@@ -13,25 +13,35 @@ async function updateProfile(data) {
       body: JSON.stringify(data),
     });
     return await res.json();
-  } catch { return { ok: false, message: "Backend not reachable" }; }
+  } catch {
+    return { ok: false, message: "Backend not reachable" };
+  }
 }
 
 async function getStats() {
   try {
     const [docs, apps, saved] = await Promise.all([
-      fetch(API_BASE + "/documents", { credentials: "include" }).then(r => r.json()).catch(() => ({ documents: [] })),
-      fetch(API_BASE + "/applications", { credentials: "include" }).then(r => r.json()).catch(() => ({ applications: [] })),
-      fetch(API_BASE + "/saved-jobs", { credentials: "include" }).then(r => r.json()).catch(() => ({ jobs: [] })),
+      fetch(API_BASE + "/documents", { credentials: "include" })
+        .then((r) => r.json())
+        .catch(() => ({ documents: [] })),
+      fetch(API_BASE + "/applications", { credentials: "include" })
+        .then((r) => r.json())
+        .catch(() => ({ applications: [] })),
+      fetch(API_BASE + "/saved-jobs", { credentials: "include" })
+        .then((r) => r.json())
+        .catch(() => ({ jobs: [] })),
     ]);
     return {
       documents: (docs.documents || []).length,
       applications: (apps.applications || apps || []).length,
       savedJobs: (saved.jobs || []).length,
     };
-  } catch { return { documents: 0, applications: 0, savedJobs: 0 }; }
+  } catch {
+    return { documents: 0, applications: 0, savedJobs: 0 };
+  }
 }
 
-export default function Profile({ user, setUser, setPage }) {
+export default function Profile({ user, setUser }) {
   const toast = useToast();
   const { isPremium, plan, premiumExpiry } = React.useContext(AppContext);
   const [stats, setStats] = useState({ documents: 0, applications: 0, savedJobs: 0 });
@@ -57,7 +67,7 @@ export default function Profile({ user, setUser, setPage }) {
     }
   }
 
-  const planColors = { free: "#666", premium: "#6c5ce7", pro: "#f59e0b" };
+  const planColors = { free: "#666", premium: "#0d9488", pro: "#f59e0b" };
   const planLabels = { free: "Free", premium: "Premium", pro: "Pro" };
 
   return (
@@ -94,17 +104,37 @@ export default function Profile({ user, setUser, setPage }) {
 
       {/* Profile Info */}
       <section className="card">
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginBottom: 20,
+          }}
+        >
           <div>
             <p className="eyebrow">Account Information</p>
             <h2>Personal Details</h2>
           </div>
           {!editing ? (
-            <button className="ghost-btn" onClick={() => setEditing(true)}>Edit Profile</button>
+            <button className="ghost-btn" onClick={() => setEditing(true)}>
+              Edit Profile
+            </button>
           ) : (
             <div style={{ display: "flex", gap: 8 }}>
-              <button className="ghost-btn" onClick={() => { setEditing(false); setName(user?.name || ""); setUsername(user?.username || ""); }}>Cancel</button>
-              <button className="primary-btn" onClick={handleSave} disabled={saving}>{saving ? "Saving..." : "Save"}</button>
+              <button
+                className="ghost-btn"
+                onClick={() => {
+                  setEditing(false);
+                  setName(user?.name || "");
+                  setUsername(user?.username || "");
+                }}
+              >
+                Cancel
+              </button>
+              <button className="primary-btn" onClick={handleSave} disabled={saving}>
+                {saving ? "Saving..." : "Save"}
+              </button>
             </div>
           )}
         </div>
@@ -113,7 +143,11 @@ export default function Profile({ user, setUser, setPage }) {
           <div className="profile-field">
             <label>Name</label>
             {editing ? (
-              <input value={name} onChange={e => setName(e.target.value)} placeholder="Your name" />
+              <input
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Your name"
+              />
             ) : (
               <p>{user?.name || "Not set"}</p>
             )}
@@ -121,7 +155,11 @@ export default function Profile({ user, setUser, setPage }) {
           <div className="profile-field">
             <label>Username</label>
             {editing ? (
-              <input value={username} onChange={e => setUsername(e.target.value)} placeholder="Choose a username" />
+              <input
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="Choose a username"
+              />
             ) : (
               <p>{user?.username || "Not set"}</p>
             )}
@@ -139,17 +177,28 @@ export default function Profile({ user, setUser, setPage }) {
         <p className="eyebrow">Subscription</p>
         <h2>Current Plan</h2>
         <div className="profile-subscription">
-          <div className="profile-plan-badge" style={{ background: planColors[plan] + "22", color: planColors[plan], borderColor: planColors[plan] }}>
+          <div
+            className="profile-plan-badge"
+            style={{
+              background: planColors[plan] + "22",
+              color: planColors[plan],
+              borderColor: planColors[plan],
+            }}
+          >
             {planLabels[plan]} Plan
           </div>
           {isPremium && premiumExpiry && (
             <p className="muted">Expires: {new Date(premiumExpiry).toLocaleDateString()}</p>
           )}
           {!isPremium && (
-            <Link to="/premium" className="primary-btn" style={{ textDecoration: "none" }}>Upgrade to Premium</Link>
+            <Link to="/premium" className="primary-btn" style={{ textDecoration: "none" }}>
+              Upgrade to Premium
+            </Link>
           )}
           {isPremium && (
-            <Link to="/subscription" className="ghost-btn" style={{ textDecoration: "none" }}>Manage Subscription</Link>
+            <Link to="/subscription" className="ghost-btn" style={{ textDecoration: "none" }}>
+              Manage Subscription
+            </Link>
           )}
         </div>
       </section>
@@ -158,15 +207,28 @@ export default function Profile({ user, setUser, setPage }) {
       <section className="card">
         <p className="eyebrow">Quick Links</p>
         <div className="profile-links">
-          <Link to="/dashboard" className="profile-link">📄 My Documents</Link>
-          <Link to="/jobs" className="profile-link">💼 Job Search</Link>
-          <Link to="/courses" className="profile-link">📚 Learning Hub</Link>
-          <Link to="/applications" className="profile-link">📋 Applications</Link>
-          <Link to="/saved-jobs" className="profile-link">💾 Saved Jobs</Link>
-          {isPremium && <Link to="/subscription" className="profile-link">⭐ Subscription</Link>}
+          <Link to="/dashboard" className="profile-link">
+            📄 My Documents
+          </Link>
+          <Link to="/jobs" className="profile-link">
+            💼 Job Search
+          </Link>
+          <Link to="/courses" className="profile-link">
+            📚 Learning Hub
+          </Link>
+          <Link to="/applications" className="profile-link">
+            📋 Applications
+          </Link>
+          <Link to="/saved-jobs" className="profile-link">
+            💾 Saved Jobs
+          </Link>
+          {isPremium && (
+            <Link to="/subscription" className="profile-link">
+              ⭐ Subscription
+            </Link>
+          )}
         </div>
       </section>
-
     </main>
   );
 }

@@ -39,7 +39,7 @@ const courseSchema = new mongoose.Schema(
     certificationProvided: { type: Boolean, default: false },
     isActive: { type: Boolean, default: true },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 courseSchema.index({ skills: 1 });

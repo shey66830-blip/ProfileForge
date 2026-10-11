@@ -6,16 +6,32 @@
 import { normalizeText, uniqueArray } from "../utils/textCleaner.js";
 
 const EDUCATION = [
-  "b.tech","btech","be","b.e",
-  "m.tech","mtech","mba","bca","mca",
-  "b.sc","bsc","m.sc","msc",
-  "mbbs","bds","b.pharm","m.pharm",
-  "pharm d","llb","llm","phd",
-  "diploma","iti"
+  "b.tech",
+  "btech",
+  "be",
+  "b.e",
+  "m.tech",
+  "mtech",
+  "mba",
+  "bca",
+  "mca",
+  "b.sc",
+  "bsc",
+  "m.sc",
+  "msc",
+  "mbbs",
+  "bds",
+  "b.pharm",
+  "m.pharm",
+  "pharm d",
+  "llb",
+  "llm",
+  "phd",
+  "diploma",
+  "iti",
 ];
 
-const EXPERIENCE_REGEX =
-  /\d+\+?\s*(year|years|month|months)/gi;
+const EXPERIENCE_REGEX = /\d+\+?\s*(year|years|month|months)/gi;
 
 const CERTIFICATION_KEYWORDS = [
   "aws",
@@ -29,7 +45,7 @@ const CERTIFICATION_KEYWORDS = [
   "salesforce",
   "comptia",
   "coursera",
-  "udemy"
+  "udemy",
 ];
 
 const LANGUAGE_KEYWORDS = [
@@ -41,11 +57,10 @@ const LANGUAGE_KEYWORDS = [
   "japanese",
   "korean",
   "mandarin",
-  "arabic"
+  "arabic",
 ];
 
 const REQUIREMENT_PATTERNS = [
-
   "required",
 
   "requirements",
@@ -66,46 +81,35 @@ const REQUIREMENT_PATTERNS = [
 
   "ideal candidate",
 
-  "eligibility"
-
+  "eligibility",
 ];
 
 export default function extractEligibility(description = "") {
-
   const lower = normalizeText(description);
 
   // -------------------------
   // Education
   // -------------------------
 
-  const education = EDUCATION.filter(item =>
-    lower.includes(normalizeText(item))
-  );
+  const education = EDUCATION.filter((item) => lower.includes(normalizeText(item)));
 
   // -------------------------
   // Experience
   // -------------------------
 
-  const experience =
-    description.match(EXPERIENCE_REGEX) || [];
+  const experience = description.match(EXPERIENCE_REGEX) || [];
 
   // -------------------------
   // Certifications
   // -------------------------
 
-  const certifications =
-    CERTIFICATION_KEYWORDS.filter(item =>
-      lower.includes(item)
-    );
+  const certifications = CERTIFICATION_KEYWORDS.filter((item) => lower.includes(item));
 
   // -------------------------
   // Languages
   // -------------------------
 
-  const languages =
-    LANGUAGE_KEYWORDS.filter(item =>
-      lower.includes(item)
-    );
+  const languages = LANGUAGE_KEYWORDS.filter((item) => lower.includes(item));
 
   // -------------------------
   // Requirement Lines
@@ -113,39 +117,25 @@ export default function extractEligibility(description = "") {
 
   const lines = description
     .split("\n")
-    .map(l => l.trim())
+    .map((l) => l.trim())
     .filter(Boolean);
 
   const requirements = [];
 
   for (const line of lines) {
-
     const clean = normalizeText(line);
 
-    if (
-      REQUIREMENT_PATTERNS.some(keyword =>
-        clean.includes(keyword)
-      )
-    ) {
-
+    if (REQUIREMENT_PATTERNS.some((keyword) => clean.includes(keyword))) {
       requirements.push(line);
-
     }
-
   }
 
   // -------------------------
   // Bullet Points
   // -------------------------
 
-  const bullets = lines.filter(line =>
-
-    line.startsWith("-") ||
-
-    line.startsWith("•") ||
-
-    line.startsWith("*")
-
+  const bullets = lines.filter(
+    (line) => line.startsWith("-") || line.startsWith("•") || line.startsWith("*"),
   );
 
   // -------------------------
@@ -153,25 +143,14 @@ export default function extractEligibility(description = "") {
   // -------------------------
 
   return {
+    education: uniqueArray(education),
 
-    education:
-      uniqueArray(education),
+    experience: uniqueArray(experience),
 
-    experience:
-      uniqueArray(experience),
+    certifications: uniqueArray(certifications),
 
-    certifications:
-      uniqueArray(certifications),
+    languages: uniqueArray(languages),
 
-    languages:
-      uniqueArray(languages),
-
-    eligibility:
-      uniqueArray([
-        ...requirements,
-        ...bullets
-      ]).slice(0, 15)
-
+    eligibility: uniqueArray([...requirements, ...bullets]).slice(0, 15),
   };
-
 }

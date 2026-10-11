@@ -34,10 +34,7 @@ const BASE_SALARIES = {
   electronics: 650000,
 };
 
-export default function salaryPredictor({
-  resume = {},
-  job = {},
-}) {
+export default function salaryPredictor({ resume = {}, job = {} }) {
   const domains = resume.careerDomains || [];
   const experience = Number(resume.estimatedExperience || 0);
   const skills = resume.skills?.totalSkills || 0;

@@ -1,8 +1,10 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 
-const { isValidTransition, getNextStatuses, VALID_TRANSITIONS } = await import("./models/Application.js");
-const { applicationCreateSchema, applicationUpdateSchema, APPLICATION_STATUSES } = await import("./middleware/validate.js");
+const { isValidTransition, getNextStatuses, VALID_TRANSITIONS } =
+  await import("./models/Application.js");
+const { applicationCreateSchema, applicationUpdateSchema, APPLICATION_STATUSES } =
+  await import("./middleware/validate.js");
 
 // ── Status transition tests ──
 
@@ -200,10 +202,7 @@ describe("applicationUpdateSchema", () => {
 describe("VALID_TRANSITIONS completeness", () => {
   it("covers all application statuses", () => {
     for (const status of APPLICATION_STATUSES) {
-      assert.ok(
-        status in VALID_TRANSITIONS,
-        `Status "${status}" must have transition rules`
-      );
+      assert.ok(status in VALID_TRANSITIONS, `Status "${status}" must have transition rules`);
     }
   });
 
@@ -211,7 +210,10 @@ describe("VALID_TRANSITIONS completeness", () => {
     for (const [from, tos] of Object.entries(VALID_TRANSITIONS)) {
       assert.ok(APPLICATION_STATUSES.includes(from), `From-status "${from}" must be in enum`);
       for (const to of tos) {
-        assert.ok(APPLICATION_STATUSES.includes(to), `To-status "${to}" (from "${from}") must be in enum`);
+        assert.ok(
+          APPLICATION_STATUSES.includes(to),
+          `To-status "${to}" (from "${from}") must be in enum`,
+        );
       }
     }
   });
@@ -238,7 +240,7 @@ describe("Application ownership", () => {
   it("unique index on user+jobId", () => {
     const indexes = Application.schema.indexes();
     const uniquePair = indexes.find(
-      (idx) => idx[0].user === 1 && idx[0].jobId === 1 && idx[1]?.unique === true
+      (idx) => idx[0].user === 1 && idx[0].jobId === 1 && idx[1]?.unique === true,
     );
     assert.ok(uniquePair, "Should have unique index on { user, jobId }");
   });
@@ -260,10 +262,7 @@ describe("Document version linkage", () => {
   });
 
   it("schema has jobSnapshot as nested subdocument", () => {
-    // Nested subdocuments are in childSchemas, not paths
-    const hasJobSnapshot = Application.schema.childSchemas.size > 0 ||
-      Application.schema.paths.jobSnapshot !== undefined;
-    // Check via the actual schema tree
+    // Nested subdocuments live in the schema tree rather than as plain paths.
     const tree = Application.schema.tree;
     assert.ok(tree.jobSnapshot, "jobSnapshot should be in schema tree");
   });

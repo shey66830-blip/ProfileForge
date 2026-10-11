@@ -1,7 +1,14 @@
 import express from "express";
 import passport from "../config/passport.js";
 
-import { signup, login, logout, me, updateProfile } from "../controllers/authController.js";
+import {
+  signup,
+  login,
+  logout,
+  me,
+  updateProfile,
+  setHiringMode,
+} from "../controllers/authController.js";
 import { protect } from "../middleware/authMiddleware.js";
 import { validate, signupSchema, loginSchema } from "../middleware/validate.js";
 import { authLimiter } from "../middleware/rateLimiter.js";
@@ -13,6 +20,7 @@ router.post("/login", authLimiter, validate(loginSchema), login);
 router.post("/logout", logout);
 router.get("/me", protect, me);
 router.put("/update-profile", protect, updateProfile);
+router.put("/hiring-mode", protect, setHiringMode);
 
 // Google OAuth
 router.get(
@@ -20,7 +28,7 @@ router.get(
   passport.authenticate("google", {
     scope: ["profile", "email"],
     session: false,
-  })
+  }),
 );
 
 router.get(
@@ -39,7 +47,7 @@ router.get(
     });
 
     res.redirect(process.env.CLIENT_URL);
-  }
+  },
 );
 
 // GitHub OAuth
@@ -48,7 +56,7 @@ router.get(
   passport.authenticate("github", {
     scope: ["user:email"],
     session: false,
-  })
+  }),
 );
 
 router.get(
@@ -67,7 +75,7 @@ router.get(
     });
 
     res.redirect(process.env.CLIENT_URL);
-  }
+  },
 );
 
 export default router;

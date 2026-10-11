@@ -5,15 +5,15 @@ import mongoose from "mongoose";
 // status; the value is an array of allowed next statuses.
 // Any transition not listed is blocked.
 const VALID_TRANSITIONS = {
-  saved:      ["preparing", "applied", "withdrawn"],
-  preparing:  ["applied", "saved", "withdrawn"],
-  applied:    ["screening", "interview", "rejected", "withdrawn"],
-  screening:  ["interview", "rejected", "withdrawn"],
-  interview:  ["offer", "screening", "rejected", "withdrawn"],
-  offer:      ["accepted", "rejected", "withdrawn"],
-  accepted:   [], // terminal state
-  rejected:   ["saved"], // can re-apply from rejected
-  withdrawn:  ["saved"], // can re-apply from withdrawn
+  saved: ["preparing", "applied", "withdrawn"],
+  preparing: ["applied", "saved", "withdrawn"],
+  applied: ["screening", "interview", "rejected", "withdrawn"],
+  screening: ["interview", "rejected", "withdrawn"],
+  interview: ["offer", "screening", "rejected", "withdrawn"],
+  offer: ["accepted", "rejected", "withdrawn"],
+  accepted: [], // terminal state
+  rejected: ["saved"], // can re-apply from rejected
+  withdrawn: ["saved"], // can re-apply from withdrawn
 };
 
 /**
@@ -74,7 +74,17 @@ const applicationSchema = new mongoose.Schema(
     // ── Status with controlled transitions ──
     status: {
       type: String,
-      enum: ["saved", "preparing", "applied", "screening", "interview", "offer", "accepted", "rejected", "withdrawn"],
+      enum: [
+        "saved",
+        "preparing",
+        "applied",
+        "screening",
+        "interview",
+        "offer",
+        "accepted",
+        "rejected",
+        "withdrawn",
+      ],
       default: "saved",
     },
 
@@ -104,7 +114,7 @@ const applicationSchema = new mongoose.Schema(
       default: null,
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 // One application per user per job

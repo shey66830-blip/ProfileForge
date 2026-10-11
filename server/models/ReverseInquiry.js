@@ -41,7 +41,7 @@ const reverseInquirySchema = new mongoose.Schema(
 
     respondedAt: { type: Date, default: null },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 // One inquiry per user per post — no spam.
@@ -52,7 +52,8 @@ reverseInquirySchema.index({ post: 1, createdAt: -1 });
 // inquirer's account email — that stays private until accepted.
 export function toOwnerView(inquiry) {
   if (!inquiry) return null;
-  const sender = typeof inquiry.fromUser === "object" && inquiry.fromUser !== null ? inquiry.fromUser : null;
+  const sender =
+    typeof inquiry.fromUser === "object" && inquiry.fromUser !== null ? inquiry.fromUser : null;
   return {
     _id: inquiry._id,
     post: inquiry.post,

@@ -1,7 +1,13 @@
 import Document from "../models/Document.js";
 import analyzeResume from "../services/aiResumeAnalyzer.js";
 import calculateATS from "../services/atsScoreEngine.js";
-import { resolveChatConfig, chatCompletion, getProviderClient, humanizeProviderError } from "../services/aiProvider.js";
+import {
+  resolveChatConfig,
+  chatCompletion,
+  getProviderClient,
+  humanizeProviderError,
+} from "../services/aiProvider.js";
+import { incrementUsage } from "../middleware/planGate.js";
 
 export const analyzeResumeEndpoint = async (req, res) => {
   try {
@@ -47,11 +53,8 @@ export const editDocument = async (req, res) => {
       });
     }
 
-    const docTypeLabel = oldDoc.type === "resume"
-      ? "resume"
-      : oldDoc.type === "cv"
-        ? "curriculum vitae"
-        : "biodata";
+    const docTypeLabel =
+      oldDoc.type === "resume" ? "resume" : oldDoc.type === "cv" ? "curriculum vitae" : "biodata";
 
     const systemPrompt = `You are an expert career document editor. The user has a ${docTypeLabel} and wants you to improve it.\r\n\r\nRules:\r\n- Keep the overall structure and sections intact\r\n- Improve clarity, impact, and professionalism\r\n- Use strong action verbs and quantified achievements where possible\r\n- Make it ATS-friendly (use standard section headings, avoid special characters)\r\n- Keep the same information — do not fabricate new details\r\n- Output ONLY the improved document text, no explanations or markdown formatting`;
 
@@ -86,6 +89,13 @@ export const editDocument = async (req, res) => {
       data: oldDoc.data,
       generatedText: editedText,
     });
+
+    // Billable AI action succeeded — count it against the daily limit.
+    try {
+      await incrementUsage(req.user._id, "aiEdits");
+    } catch {
+      /* non-fatal */
+    }
 
     res.json({
       ok: true,
@@ -125,14 +135,28 @@ export const generateCoverLetter = async (req, res) => {
       temperature: 0.7,
       maxTokens: 1000,
       messages: [
-        { role: "system", content: "You are an expert career coach who writes compelling, personalized cover letters." },
+        {
+          role: "system",
+          content:
+            "You are an expert career coach who writes compelling, personalized cover letters.",
+        },
         { role: "user", content: prompt },
       ],
     });
 
     const letter = completionResult.text;
     if (!letter) {
-      return res.json({ ok: false, message: "AI did not generate a cover letter. Please try again." });
+      return res.json({
+        ok: false,
+        message: "AI did not generate a cover letter. Please try again.",
+      });
+    }
+
+    // Billable AI action succeeded — count it against the daily limit.
+    try {
+      await incrementUsage(req.user._id, "coverLetter");
+    } catch {
+      /* non-fatal */
     }
 
     res.json({ ok: true, coverLetter: letter });
@@ -172,7 +196,13 @@ export const analyzeResumeJob = async (req, res) => {
       generatedText: resumeText,
     };
 
-    const { buildMutableJobProfile, computeResumeJobMatch, buildAnalysisEnvelope, parseJobRequirements, analyzeQualitativeWithRetry } = await import("../services/resumeJobAnalyzer.js");
+    const {
+      buildMutableJobProfile,
+      computeResumeJobMatch,
+      buildAnalysisEnvelope,
+      parseJobRequirements,
+      analyzeQualitativeWithRetry,
+    } = await import("../services/resumeJobAnalyzer.js");
 
     const jobProfile = buildMutableJobProfile({
       title: jobTitle || "",
@@ -207,7 +237,7 @@ export const analyzeResumeJob = async (req, res) => {
           model: effectiveModel,
         } = getProviderClient(
           typeof provider === "string" ? provider : "experiential",
-          typeof model === "string" ? model : ""
+          typeof model === "string" ? model : "",
         );
         qualitativeModel = effectiveModel;
 
@@ -251,26 +281,19 @@ export const analyzeResumeJob = async (req, res) => {
 };
 
 export const compareResumeJob = async (req, res) => {
-  try {     const safeBody = (req?.body && typeof req.body === 'object') ? req.body : {};
+  try {
+    const safeBody = req?.body && typeof req.body === "object" ? req.body : {};
 
-     const {
-       resumeId,
-       jobTitle,
-       jobCompany,
-       jobDescription,
-       providerA,
-       modelA,
-       providerB,
-       modelB,
-     } = safeBody;
+    const { resumeId, jobTitle, jobCompany, jobDescription, providerA, modelA, providerB, modelB } =
+      safeBody;
 
-     if (!resumeId) {
-       return res.json({ ok: false, message: "Resume ID is required for comparison." });
-     }
+    if (!resumeId) {
+      return res.json({ ok: false, message: "Resume ID is required for comparison." });
+    }
 
-     if (!jobDescription) {
-       return res.json({ ok: false, message: "Job description is required for comparison." });
-     }
+    if (!jobDescription) {
+      return res.json({ ok: false, message: "Job description is required for comparison." });
+    }
 
     const doc = await Document.findOne({ _id: resumeId, user: req.user._id });
     if (!doc) {
@@ -288,7 +311,8 @@ export const compareResumeJob = async (req, res) => {
       generatedText: resumeText,
     };
 
-    const { buildMutableJobProfile, parseJobRequirements } = await import("../services/resumeJobAnalyzer.js");
+    const { buildMutableJobProfile, parseJobRequirements } =
+      await import("../services/resumeJobAnalyzer.js");
     const { compareModels } = await import("../services/resumeJobComparison.js"); // named import
 
     // The comparison service now exports named functions only.
@@ -307,16 +331,11 @@ export const compareResumeJob = async (req, res) => {
 
     // Default pair leads with the working model (claude-fable-5.1); the
     // other Experiential model is B so the two sides stay distinct.
-    const configA = getProviderClient(
-      providerA || "experiential",
-      modelA || "claude-fable-5.1"
-    );
-    const configB = providerB || modelB
-      ? getProviderClient(
-          providerB || "experiential",
-          modelB || "gpt-6-astra"
-        )
-      : null;
+    const configA = getProviderClient(providerA || "experiential", modelA || "claude-fable-5.1");
+    const configB =
+      providerB || modelB
+        ? getProviderClient(providerB || "experiential", modelB || "gpt-6-astra")
+        : null;
 
     const comparison = await compareModels({
       providerConfigA: configA,

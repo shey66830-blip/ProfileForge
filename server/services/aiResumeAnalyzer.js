@@ -11,146 +11,115 @@ import analyzeExperience from "./experienceExtractor.js";
 import extractEligibility from "./eligibilityExtractor.js";
 
 function detectCareerDomains(skills = [], education = {}) {
+  const domains = [];
 
-    const domains = [];
+  const text = [...skills, ...(education.branches || [])].join(" ").toLowerCase();
 
-    const text = [
-        ...skills,
-        ...(education.branches || [])
-    ].join(" ").toLowerCase();
+  if (text.includes("computer") || text.includes("python") || text.includes("react"))
+    domains.push("Software Development");
 
-    if (text.includes("computer") || text.includes("python") || text.includes("react"))
-        domains.push("Software Development");
+  if (text.includes("machine learning") || text.includes("artificial intelligence"))
+    domains.push("Artificial Intelligence");
 
-    if (text.includes("machine learning") || text.includes("artificial intelligence"))
-        domains.push("Artificial Intelligence");
+  if (text.includes("data")) domains.push("Data Science");
 
-    if (text.includes("data"))
-        domains.push("Data Science");
+  if (text.includes("pharmacy")) domains.push("Pharmacy");
 
-    if (text.includes("pharmacy"))
-        domains.push("Pharmacy");
+  if (text.includes("physiotherapy")) domains.push("Physiotherapy");
 
-    if (text.includes("physiotherapy"))
-        domains.push("Physiotherapy");
+  if (text.includes("nursing")) domains.push("Nursing");
 
-    if (text.includes("nursing"))
-        domains.push("Nursing");
+  if (text.includes("medical")) domains.push("Healthcare");
 
-    if (text.includes("medical"))
-        domains.push("Healthcare");
+  if (text.includes("marketing")) domains.push("Marketing");
 
-    if (text.includes("marketing"))
-        domains.push("Marketing");
+  if (text.includes("finance")) domains.push("Finance");
 
-    if (text.includes("finance"))
-        domains.push("Finance");
+  if (text.includes("law")) domains.push("Law");
 
-    if (text.includes("law"))
-        domains.push("Law");
+  if (text.includes("civil")) domains.push("Civil Engineering");
 
-    if (text.includes("civil"))
-        domains.push("Civil Engineering");
+  if (text.includes("mechanical")) domains.push("Mechanical Engineering");
 
-    if (text.includes("mechanical"))
-        domains.push("Mechanical Engineering");
+  if (text.includes("electrical")) domains.push("Electrical Engineering");
 
-    if (text.includes("electrical"))
-        domains.push("Electrical Engineering");
+  if (text.includes("electronics")) domains.push("Electronics");
 
-    if (text.includes("electronics"))
-        domains.push("Electronics");
+  if (text.includes("design")) domains.push("Design");
 
-    if (text.includes("design"))
-        domains.push("Design");
-
-    return [...new Set(domains)];
+  return [...new Set(domains)];
 }
 
 function calculateConfidence(skillCount, educationFound, experienceFound) {
+  let score = 0;
 
-    let score = 0;
+  score += Math.min(skillCount * 2, 40);
 
-    score += Math.min(skillCount * 2, 40);
+  if (educationFound) score += 30;
 
-    if (educationFound)
-        score += 30;
+  if (experienceFound) score += 30;
 
-    if (experienceFound)
-        score += 30;
-
-    return Math.min(score, 100);
-
+  return Math.min(score, 100);
 }
 
 export default function analyzeResume(resumeText = "") {
+  const cleaned = cleanResumeText(resumeText);
 
-    const cleaned = cleanResumeText(resumeText);
+  // Feed the matcher the original text, not the symbol-stripped cleaned
+  // copy: the shared skill matcher normalizes "go-live" → "golive" and
+  // "node.js" → "node js" itself, but it can only do that if the hyphens
+  // and dots still exist in its input.
+  const skillAnalysis = analyzeSkills(resumeText || "");
 
-    // Feed the matcher the original text, not the symbol-stripped cleaned
-    // copy: the shared skill matcher normalizes "go-live" → "golive" and
-    // "node.js" → "node js" itself, but it can only do that if the hyphens
-    // and dots still exist in its input.
-    const skillAnalysis = analyzeSkills(resumeText || "");
+  const educationAnalysis = analyzeEducation(cleaned.cleaned);
 
-    const educationAnalysis = analyzeEducation(cleaned.cleaned);
+  const experienceAnalysis = analyzeExperience(cleaned.cleaned);
 
-    const experienceAnalysis = analyzeExperience(cleaned.cleaned);
+  const eligibilityData = extractEligibility(cleaned.cleaned);
 
-    const eligibilityData = extractEligibility(cleaned.cleaned);
+  const careerDomains = detectCareerDomains(
+    skillAnalysis.skills,
 
-    const careerDomains = detectCareerDomains(
+    educationAnalysis,
+  );
 
-        skillAnalysis.skills,
+  const confidenceScore = calculateConfidence(
+    skillAnalysis.totalSkills,
 
-        educationAnalysis
+    educationAnalysis.highestQualification,
 
-    );
+    experienceAnalysis.estimatedYears,
+  );
 
-    const confidenceScore = calculateConfidence(
+  return {
+    resumeText: resumeText,
 
-        skillAnalysis.totalSkills,
+    cleanedText: cleaned.cleaned,
 
-        educationAnalysis.highestQualification,
+    totalWords: cleaned.tokens.length,
 
-        experienceAnalysis.estimatedYears
+    totalLines: cleaned.lines.length,
 
-    );
+    skills: skillAnalysis.skills,
 
-    return {
+    skillsTotal: skillAnalysis.totalSkills,
 
-        resumeText: resumeText,
+    education: educationAnalysis,
 
-        cleanedText: cleaned.cleaned,
+    experience: experienceAnalysis,
 
-        totalWords: cleaned.tokens.length,
+    certifications: eligibilityData.certifications,
 
-        totalLines: cleaned.lines.length,
+    languages: eligibilityData.languages,
 
-        skills: skillAnalysis.skills,
+    careerDomains,
 
-        skillsTotal: skillAnalysis.totalSkills,
+    highestQualification: educationAnalysis.highestQualification,
 
-        education: educationAnalysis,
+    estimatedExperience: experienceAnalysis.estimatedYears,
 
-        experience: experienceAnalysis,
+    confidenceScore,
 
-        certifications: eligibilityData.certifications,
-
-        languages: eligibilityData.languages,
-
-        careerDomains,
-
-        highestQualification:
-            educationAnalysis.highestQualification,
-
-        estimatedExperience:
-            experienceAnalysis.estimatedYears,
-
-        confidenceScore,
-
-        analyzedAt: new Date().toISOString()
-
-    };
-
+    analyzedAt: new Date().toISOString(),
+  };
 }

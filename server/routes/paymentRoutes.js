@@ -1,7 +1,12 @@
 import express from "express";
 import {
-  createOrder, verifyPayment, checkPremium,
-  getUsage, cancelSubscription, getPaymentHistory, mockTestPayment,
+  createOrder,
+  verifyPayment,
+  checkPremium,
+  getUsage,
+  cancelSubscription,
+  getPaymentHistory,
+  mockTestPayment,
 } from "../controllers/paymentController.js";
 import { protect } from "../middleware/authMiddleware.js";
 

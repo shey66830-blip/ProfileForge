@@ -11,8 +11,14 @@ function mockReqRes(body = {}) {
   let statusCode = 200;
   let jsonBody = null;
   const res = {
-    status(code) { statusCode = code; return res; },
-    json(data) { jsonBody = data; return res; },
+    status(code) {
+      statusCode = code;
+      return res;
+    },
+    json(data) {
+      jsonBody = data;
+      return res;
+    },
   };
   const next = () => {};
   return { req, res, next, getResult: () => ({ statusCode, jsonBody }) };
@@ -129,6 +135,8 @@ describe("Security: resume analysis schema", () => {
     validate(aiAnalysisSchema)(req, res, next);
     // Should not crash — Zod strips unknown keys
     const result = getResult();
-    assert.ok(result.jsonBody === null || result.jsonBody.ok === false || result.jsonBody.ok === true);
+    assert.ok(
+      result.jsonBody === null || result.jsonBody.ok === false || result.jsonBody.ok === true,
+    );
   });
 });

@@ -1,12 +1,20 @@
 import express from "express";
 import {
-  getMyPost, upsertMyPost, setPostStatus,
+  getMyPost,
+  upsertMyPost,
+  setPostStatus,
   getBoard,
-  sendInquiry, getMyInquiries, getSentInquiries, respondToInquiry,
+  sendInquiry,
+  getMyInquiries,
+  getSentInquiries,
+  respondToInquiry,
 } from "../controllers/reverseBoardController.js";
 import { protect } from "../middleware/authMiddleware.js";
 import {
-  reversePostSchema, reverseInquirySchema, reverseInquiryActionSchema, validate,
+  reversePostSchema,
+  reverseInquirySchema,
+  reverseInquiryActionSchema,
+  validate,
 } from "../middleware/validate.js";
 
 const router = express.Router();

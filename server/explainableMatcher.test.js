@@ -1,7 +1,8 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 
-const { classifySkills, findSkillEvidence, explainableMatch, SCORE_WEIGHTS } = await import("./services/explainableMatcher.js");
+const { classifySkills, findSkillEvidence, explainableMatch, SCORE_WEIGHTS } =
+  await import("./services/explainableMatcher.js");
 
 // ── Skill classification tests ──
 
@@ -116,9 +117,7 @@ describe("findSkillEvidence", () => {
 describe("explainableMatch", () => {
   const resume = {
     skills: ["JavaScript", "React", "Node.js", "PostgreSQL"],
-    experience: [
-      { role: "Frontend Dev", description: "Built React apps", title: "Frontend Dev" },
-    ],
+    experience: [{ role: "Frontend Dev", description: "Built React apps", title: "Frontend Dev" }],
     estimatedExperience: 3,
     highestQualification: "B.Tech",
     education: { branches: ["Computer Science"] },

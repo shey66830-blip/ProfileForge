@@ -31,7 +31,10 @@ export const exportATSHtml = async (req, res) => {
       // Default: use the user's canonical profile
       profile = await Profile.findOne({ user: req.user._id, status: "canonical" });
       if (!profile) {
-        return res.json({ ok: false, message: "No profile found. Create or import a profile first." });
+        return res.json({
+          ok: false,
+          message: "No profile found. Create or import a profile first.",
+        });
       }
     }
 

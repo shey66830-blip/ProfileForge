@@ -16,7 +16,7 @@ const documentSchema = new mongoose.Schema(
     data: Object,
     generatedText: String,
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 export default mongoose.model("Document", documentSchema);

@@ -3,7 +3,9 @@ import assert from "node:assert/strict";
 
 const { default: ReversePost, toPublicPost } = await import("./models/ReversePost.js");
 const { default: ReverseInquiry, toOwnerView } = await import("./models/ReverseInquiry.js");
-const { reversePostSchema, reverseInquirySchema, reverseInquiryActionSchema } = await import("./middleware/validate.js");
+const { reversePostSchema, reverseInquirySchema, reverseInquiryActionSchema } =
+  await import("./middleware/validate.js");
+const { default: User } = await import("./models/User.js");
 
 // ── ReversePost model schema ──
 
@@ -15,16 +17,32 @@ describe("ReversePost schema", () => {
 
   it("has the expected top-level paths", () => {
     const paths = Object.keys(ReversePost.schema.paths);
-    for (const p of ["user", "headline", "why", "skills", "workMode", "locations",
-      "openToRelocate", "employmentType", "expectedSalary", "availability",
-      "portfolioUrl", "status", "inquiryCount"]) {
+    for (const p of [
+      "user",
+      "headline",
+      "why",
+      "skills",
+      "workMode",
+      "locations",
+      "openToRelocate",
+      "employmentType",
+      "expectedSalary",
+      "availability",
+      "portfolioUrl",
+      "status",
+      "inquiryCount",
+    ]) {
       assert.ok(paths.includes(p), `should have ${p}`);
     }
   });
 
   it("status enum is draft/published/paused/closed", () => {
-    assert.deepEqual(ReversePost.schema.paths.status.enumValues,
-      ["draft", "published", "paused", "closed"]);
+    assert.deepEqual(ReversePost.schema.paths.status.enumValues, [
+      "draft",
+      "published",
+      "paused",
+      "closed",
+    ]);
   });
 
   it("default status is draft", () => {
@@ -32,13 +50,22 @@ describe("ReversePost schema", () => {
   });
 
   it("workMode enum covers remote/hybrid/onsite/any", () => {
-    assert.deepEqual(ReversePost.schema.paths.workMode.enumValues,
-      ["remote", "hybrid", "onsite", "any"]);
+    assert.deepEqual(ReversePost.schema.paths.workMode.enumValues, [
+      "remote",
+      "hybrid",
+      "onsite",
+      "any",
+    ]);
   });
 
   it("employmentType enum covers the 5 values", () => {
-    assert.deepEqual(ReversePost.schema.paths.employmentType.enumValues,
-      ["full_time", "part_time", "contract", "internship", "any"]);
+    assert.deepEqual(ReversePost.schema.paths.employmentType.enumValues, [
+      "full_time",
+      "part_time",
+      "contract",
+      "internship",
+      "any",
+    ]);
   });
 
   it("headline is required", () => {
@@ -81,8 +108,11 @@ describe("ReverseInquiry schema", () => {
   });
 
   it("status enum is new/accepted/declined", () => {
-    assert.deepEqual(ReverseInquiry.schema.paths.status.enumValues,
-      ["new", "accepted", "declined"]);
+    assert.deepEqual(ReverseInquiry.schema.paths.status.enumValues, [
+      "new",
+      "accepted",
+      "declined",
+    ]);
   });
 
   it("default status is new", () => {
@@ -101,14 +131,52 @@ describe("ReverseInquiry schema", () => {
   });
 });
 
+// ── Hiring-mode gating ──
+
+describe("hiring mode", () => {
+  it("defaults to off for new users", () => {
+    const u = new User({ email: "a@b.com", password: "x" });
+    assert.equal(u.hiringMode, false);
+  });
+
+  it("requireHiringMode rejects when off and allows when on", async () => {
+    const { requireHiringMode } = await import("./controllers/reverseBoardController.js");
+    let jsonPayload = null;
+    const res = {
+      json(p) {
+        jsonPayload = p;
+      },
+    };
+
+    const off = requireHiringMode({ user: { hiringMode: false } }, res);
+    assert.equal(off, false);
+    assert.equal(jsonPayload.ok, false);
+    assert.match(jsonPayload.message, /Hiring mode/i);
+
+    const on = requireHiringMode({ user: { hiringMode: true } }, res);
+    assert.equal(on, true);
+  });
+});
+
 // ── Public/owner view sanitization ──
 
 describe("toPublicPost", () => {
   const base = {
-    _id: "p1", headline: "H", why: "W", skills: ["react"], workMode: "remote",
-    locations: ["EU"], openToRelocate: true, employmentType: "full_time",
-    expectedSalary: "120k", availability: "Now", portfolioUrl: "https://x.dev",
-    status: "published", inquiryCount: 3, createdAt: "d1", updatedAt: "d2",
+    _id: "p1",
+    headline: "H",
+    why: "W",
+    skills: ["react"],
+    workMode: "remote",
+    locations: ["EU"],
+    openToRelocate: true,
+    employmentType: "full_time",
+    expectedSalary: "120k",
+    availability: "Now",
+    portfolioUrl: "https://x.dev",
+    status: "published",
+    inquiryCount: 3,
+    createdAt: "d1",
+    updatedAt: "d2",
     user: { email: "secret@example.com", passwordHash: "x", username: "dev1", name: "Dev One" },
   };
 
@@ -135,7 +203,10 @@ describe("toPublicPost", () => {
 describe("toOwnerView", () => {
   it("never leaks the inquirer's account email", () => {
     const view = toOwnerView({
-      _id: "i1", post: "p1", message: "hi", status: "new",
+      _id: "i1",
+      post: "p1",
+      message: "hi",
+      status: "new",
       fromUser: { email: "hr@example.com", username: "hruser", name: "HR" },
       createdAt: "d",
     });
@@ -146,8 +217,10 @@ describe("toOwnerView", () => {
 
   it("prefers the stated company over the account name", () => {
     const view = toOwnerView({
-      message: "hi", status: "new",
-      fromUser: { username: "hruser" }, company: "Acme Corp",
+      message: "hi",
+      status: "new",
+      fromUser: { username: "hruser" },
+      company: "Acme Corp",
     });
     assert.equal(view.company, "Acme Corp");
   });
@@ -171,11 +244,17 @@ describe("reversePostSchema", () => {
   });
 
   it("rejects an invalid status", () => {
-    assert.equal(reversePostSchema.safeParse({ headline: "abcdef", status: "live" }).success, false);
+    assert.equal(
+      reversePostSchema.safeParse({ headline: "abcdef", status: "live" }).success,
+      false,
+    );
   });
 
   it("rejects an invalid workMode", () => {
-    assert.equal(reversePostSchema.safeParse({ headline: "abcdef", workMode: "underwater" }).success, false);
+    assert.equal(
+      reversePostSchema.safeParse({ headline: "abcdef", workMode: "underwater" }).success,
+      false,
+    );
   });
 
   it("caps skills at 40", () => {
@@ -184,24 +263,39 @@ describe("reversePostSchema", () => {
   });
 
   it("accepts empty portfolioUrl but rejects a non-URL", () => {
-    assert.equal(reversePostSchema.safeParse({ headline: "abcdef", portfolioUrl: "" }).success, true);
-    assert.equal(reversePostSchema.safeParse({ headline: "abcdef", portfolioUrl: "not-a-url" }).success, false);
+    assert.equal(
+      reversePostSchema.safeParse({ headline: "abcdef", portfolioUrl: "" }).success,
+      true,
+    );
+    assert.equal(
+      reversePostSchema.safeParse({ headline: "abcdef", portfolioUrl: "not-a-url" }).success,
+      false,
+    );
   });
 });
 
 describe("reverseInquirySchema", () => {
   it("requires postId and a message of at least 10 chars", () => {
-    assert.equal(reverseInquirySchema.safeParse({ postId: "p1", message: "too short" }).success, false);
+    assert.equal(
+      reverseInquirySchema.safeParse({ postId: "p1", message: "too short" }).success,
+      false,
+    );
     assert.equal(reverseInquirySchema.safeParse({ message: "this is long enough" }).success, false);
   });
 
   it("accepts a valid inquiry", () => {
-    const r = reverseInquirySchema.safeParse({ postId: "p1", message: "We would love to hire you for our platform team." });
+    const r = reverseInquirySchema.safeParse({
+      postId: "p1",
+      message: "We would love to hire you for our platform team.",
+    });
     assert.equal(r.success, true);
   });
 
   it("caps message at 2000 chars", () => {
-    assert.equal(reverseInquirySchema.safeParse({ postId: "p1", message: "x".repeat(2001) }).success, false);
+    assert.equal(
+      reverseInquirySchema.safeParse({ postId: "p1", message: "x".repeat(2001) }).success,
+      false,
+    );
   });
 });
 

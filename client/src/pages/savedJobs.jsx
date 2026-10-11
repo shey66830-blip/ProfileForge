@@ -3,7 +3,8 @@ import { getSavedJobs, unsaveJob } from "../services/savedJobService.js";
 
 function formatSalary(salary) {
   if (!salary) return "Not disclosed";
-  if (salary.min && salary.max) return `₹${(salary.min / 1000).toFixed(0)}K – ₹${(salary.max / 1000).toFixed(0)}K`;
+  if (salary.min && salary.max)
+    return `₹${(salary.min / 1000).toFixed(0)}K – ₹${(salary.max / 1000).toFixed(0)}K`;
   return "Not disclosed";
 }
 
@@ -35,7 +36,9 @@ export default function SavedJobs({ setPage }) {
           <h1>Saved Jobs</h1>
           <p>Jobs you bookmarked for later review.</p>
         </div>
-        <button className="secondary-btn" onClick={() => setPage("jobs")}>Back to Search</button>
+        <button className="secondary-btn" onClick={() => setPage("jobs")}>
+          Back to Search
+        </button>
       </section>
 
       {loading && (
@@ -49,7 +52,9 @@ export default function SavedJobs({ setPage }) {
           <div style={{ fontSize: 60, marginBottom: 12 }}>♡</div>
           <h2>No Saved Jobs Yet</h2>
           <p className="muted">Browse jobs and click the heart icon to save them here.</p>
-          <button className="primary-btn" style={{ marginTop: 16 }} onClick={() => setPage("jobs")}>Search Jobs</button>
+          <button className="primary-btn" style={{ marginTop: 16 }} onClick={() => setPage("jobs")}>
+            Search Jobs
+          </button>
         </section>
       )}
 
@@ -58,14 +63,34 @@ export default function SavedJobs({ setPage }) {
           {jobs.map((saved) => {
             const job = saved.jobData || {};
             return (
-              <div className="card" key={saved._id} style={{ display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+              <div
+                className="card"
+                key={saved._id}
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  justifyContent: "space-between",
+                }}
+              >
                 <div>
                   <div style={{ display: "flex", justifyContent: "space-between" }}>
                     <div>
                       <h3>{job.title || "Unknown Job"}</h3>
                       <p className="muted">{job.company || "Unknown"}</p>
                     </div>
-                    <button onClick={() => handleUnsave(saved.jobId)} style={{ background: "none", border: "none", color: "#ef4444", fontSize: 20, cursor: "pointer" }} title="Unsave">♥</button>
+                    <button
+                      onClick={() => handleUnsave(saved.jobId)}
+                      style={{
+                        background: "none",
+                        border: "none",
+                        color: "#ef4444",
+                        fontSize: 20,
+                        cursor: "pointer",
+                      }}
+                      title="Unsave"
+                    >
+                      ♥
+                    </button>
                   </div>
                   <hr />
                   <p>📍 {job.location || "N/A"}</p>
@@ -74,7 +99,14 @@ export default function SavedJobs({ setPage }) {
                   <p className="muted">Saved: {new Date(saved.createdAt).toLocaleDateString()}</p>
                 </div>
                 <div style={{ marginTop: 12 }}>
-                  {job.applyUrl && <button className="primary-btn small" onClick={() => window.open(job.applyUrl, "_blank")}>Apply</button>}
+                  {job.applyUrl && (
+                    <button
+                      className="primary-btn small"
+                      onClick={() => window.open(job.applyUrl, "_blank")}
+                    >
+                      Apply
+                    </button>
+                  )}
                 </div>
               </div>
             );

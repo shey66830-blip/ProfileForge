@@ -5,6 +5,17 @@ import ReverseInquiry, { toOwnerView } from "../models/ReverseInquiry.js";
 // human-readable `message` on failure. Owner email is never returned
 // by any endpoint — contact is exchanged only when an inquiry is accepted.
 
+// Browse talent and apply-to-hire are hiring-mode-only surfaces: the
+// requester must have switched into hiring mode (company side). This is
+// enforced server-side too, not just hidden in the UI.
+export function requireHiringMode(req, res) {
+  if (!req.user?.hiringMode) {
+    res.json({ ok: false, message: "Switch on Hiring mode to browse talent and apply to hire." });
+    return false;
+  }
+  return true;
+}
+
 // ── My post (owner) ────────────────────────────────────────────────
 
 export async function getMyPost(req, res) {
@@ -40,7 +51,7 @@ export async function upsertMyPost(req, res) {
       post = await ReversePost.findOneAndUpdate(
         { user: req.user._id },
         { $set: updates },
-        { new: true, runValidators: true }
+        { new: true, runValidators: true },
       );
     } else {
       post = await ReversePost.create({
@@ -77,11 +88,22 @@ export async function setPostStatus(req, res) {
 
 export async function getBoard(req, res) {
   try {
+    if (!requireHiringMode(req, res)) return;
     const q = { status: "published" };
-    if (req.query.workMode && ["remote", "hybrid", "onsite", "any"].includes(req.query.workMode) && req.query.workMode !== "any") {
+    if (
+      req.query.workMode &&
+      ["remote", "hybrid", "onsite", "any"].includes(req.query.workMode) &&
+      req.query.workMode !== "any"
+    ) {
       q.workMode = req.query.workMode;
     }
-    if (req.query.employmentType && ["full_time", "part_time", "contract", "internship", "any"].includes(req.query.employmentType) && req.query.employmentType !== "any") {
+    if (
+      req.query.employmentType &&
+      ["full_time", "part_time", "contract", "internship", "any"].includes(
+        req.query.employmentType,
+      ) &&
+      req.query.employmentType !== "any"
+    ) {
       q.employmentType = req.query.employmentType;
     }
     if (req.query.skill) {
@@ -106,6 +128,7 @@ export async function getBoard(req, res) {
 
 export async function sendInquiry(req, res) {
   try {
+    if (!requireHiringMode(req, res)) return;
     const { postId, message, company, role } = req.validatedBody;
 
     const post = await ReversePost.findById(postId);
@@ -194,11 +217,18 @@ export async function respondToInquiry(req, res) {
       // Reveal the inquirer's email to the worker now that they accepted.
       const inquirer = await inquiry.populate("fromUser", "email username name");
       contact = inquirer.fromUser
-        ? { email: inquirer.fromUser.email, name: inquirer.fromUser.username || inquirer.fromUser.name }
+        ? {
+            email: inquirer.fromUser.email,
+            name: inquirer.fromUser.username || inquirer.fromUser.name,
+          }
         : null;
     }
 
-    res.json({ ok: true, inquiry: toOwnerView({ ...inquiry.toObject(), fromUser: inquiry.fromUser }), contact });
+    res.json({
+      ok: true,
+      inquiry: toOwnerView({ ...inquiry.toObject(), fromUser: inquiry.fromUser }),
+      contact,
+    });
   } catch (err) {
     res.json({ ok: false, message: err.message });
   }

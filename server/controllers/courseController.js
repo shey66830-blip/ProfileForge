@@ -31,8 +31,10 @@ export async function listCourses(req, res) {
 export async function recommendedCourses(req, res) {
   try {
     const { missingSkills = [], matchedSkills = [], category } = req.query;
-    const ms = typeof missingSkills === "string" ? missingSkills.split(",").filter(Boolean) : missingSkills;
-    const mts = typeof matchedSkills === "string" ? matchedSkills.split(",").filter(Boolean) : matchedSkills;
+    const ms =
+      typeof missingSkills === "string" ? missingSkills.split(",").filter(Boolean) : missingSkills;
+    const mts =
+      typeof matchedSkills === "string" ? matchedSkills.split(",").filter(Boolean) : matchedSkills;
     const result = await getRecommendations(ms, mts, { category });
     res.json({ ok: true, ...result });
   } catch (err) {
@@ -72,7 +74,8 @@ export async function listCertifications(req, res) {
 export async function recommendedCertifications(req, res) {
   try {
     const { missingSkills = [] } = req.query;
-    const ms = typeof missingSkills === "string" ? missingSkills.split(",").filter(Boolean) : missingSkills;
+    const ms =
+      typeof missingSkills === "string" ? missingSkills.split(",").filter(Boolean) : missingSkills;
     const result = await getRecommendations(ms, [], {});
     res.json({ ok: true, certifications: result.certifications });
   } catch (err) {

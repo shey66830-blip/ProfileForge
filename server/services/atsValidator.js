@@ -82,11 +82,26 @@ const DATE_PATTERNS = [
  * Suspicious formatting that ATS systems struggle with.
  */
 const SUSPICIOUS_PATTERNS = [
-  { re: /\t/g, warning: "Tab characters detected — ATS may collapse or misalign content. Use spaces instead." },
-  { re: /\|/g, warning: "Pipe characters (|) detected — some ATS parsers treat these as delimiters. Use commas or separate lines." },
-  { re: /■|●|►|→|•|★|☆/g, warning: "Special bullet characters detected — use simple hyphens (-) or asterisks (*) for ATS compatibility." },
+  {
+    re: /\t/g,
+    warning: "Tab characters detected — ATS may collapse or misalign content. Use spaces instead.",
+  },
+  {
+    re: /\|/g,
+    warning:
+      "Pipe characters (|) detected — some ATS parsers treat these as delimiters. Use commas or separate lines.",
+  },
+  {
+    re: /■|●|►|→|•|★|☆/g,
+    warning:
+      "Special bullet characters detected — use simple hyphens (-) or asterisks (*) for ATS compatibility.",
+  },
   { re: /\t.*\t/g, warning: "Multiple tabs on the same line — ATS may misread column layouts." },
-  { re: /(?<!\+)\b\d{3}[-.]\d{3}[-.]\d{4}\b/g, warning: "Dotted phone format (123.456.7890) may confuse some ATS — consider using dashes or spaces." },
+  {
+    re: /(?<!\+)\b\d{3}[-.]\d{3}[-.]\d{4}\b/g,
+    warning:
+      "Dotted phone format (123.456.7890) may confuse some ATS — consider using dashes or spaces.",
+  },
 ];
 
 // ── Core validation function ───────────────────────────────────────
@@ -99,7 +114,10 @@ const SUSPICIOUS_PATTERNS = [
  */
 export function validateATS(text) {
   const warnings = [];
-  const lines = text.split("\n").map((l) => l.trim()).filter(Boolean);
+  const lines = text
+    .split("\n")
+    .map((l) => l.trim())
+    .filter(Boolean);
 
   // ── 1. Detect sections and their order ──
   const detectedSections = [];
@@ -107,7 +125,10 @@ export function validateATS(text) {
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
-    const lineLower = line.toLowerCase().replace(/[:.]+$/, "").trim();
+    const lineLower = line
+      .toLowerCase()
+      .replace(/[:.]+$/, "")
+      .trim();
 
     const canonical = HEADING_MAP[lineLower];
     if (canonical) {
@@ -135,7 +156,8 @@ export function validateATS(text) {
   if (!sectionKeys.has("contact") && !sectionKeys.has("summary") && !sectionKeys.has("objective")) {
     warnings.push({
       severity: "warning",
-      message: "No contact or summary section detected at the top. ATS parsers expect contact information first.",
+      message:
+        "No contact or summary section detected at the top. ATS parsers expect contact information first.",
     });
   }
   if (!sectionKeys.has("experience") && !sectionKeys.has("work experience")) {
@@ -153,7 +175,8 @@ export function validateATS(text) {
   if (!sectionKeys.has("skills")) {
     warnings.push({
       severity: "info",
-      message: "No skills section detected. ATS systems heavily rely on keyword matching from a skills section.",
+      message:
+        "No skills section detected. ATS systems heavily rely on keyword matching from a skills section.",
     });
   }
 
@@ -186,7 +209,8 @@ export function validateATS(text) {
   if (!hasDates) {
     warnings.push({
       severity: "warning",
-      message: "No dates detected in the resume. ATS parsers use dates to determine recency and tenure.",
+      message:
+        "No dates detected in the resume. ATS parsers use dates to determine recency and tenure.",
     });
   }
 
@@ -214,7 +238,10 @@ export function validateATS(text) {
 
   // ── 6. Check for standard headings (not custom/creative) ──
   for (const { raw } of detectedSections) {
-    const rawLower = raw.toLowerCase().replace(/[:.]+$/, "").trim();
+    const rawLower = raw
+      .toLowerCase()
+      .replace(/[:.]+$/, "")
+      .trim();
     // Check if it's a non-standard heading that maps to a known section
     if (!HEADING_MAP[rawLower] && HEADING_MAP[rawLower.replace(/s$/, "")]) {
       // e.g., "Work Experiences" vs "Work Experience" — this is fine
@@ -228,7 +255,8 @@ export function validateATS(text) {
   if (asciiRatio < 0.8) {
     warnings.push({
       severity: "warning",
-      message: "Low ASCII character ratio — the resume may contain non-standard characters that ATS parsers cannot read. Ensure all text is selectable.",
+      message:
+        "Low ASCII character ratio — the resume may contain non-standard characters that ATS parsers cannot read. Ensure all text is selectable.",
     });
   }
 
@@ -262,7 +290,10 @@ export function generatePlainTextPreview(text) {
       continue;
     }
 
-    const lineLower = line.toLowerCase().replace(/[:.]+$/, "").trim();
+    const lineLower = line
+      .toLowerCase()
+      .replace(/[:.]+$/, "")
+      .trim();
     const canonical = HEADING_MAP[lineLower];
 
     if (canonical) {
