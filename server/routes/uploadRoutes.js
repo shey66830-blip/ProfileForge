@@ -140,12 +140,7 @@ function escapeRegExp(value) {
 function splitEducationSegments(value) {
   return String(value || "")
     .split(/[|,;•\t]|\s+[-–—]\s+/)
-    .map((segment) =>
-      segment
-        .replace(/[()]/g, " ")
-        .replace(/\s+/g, " ")
-        .trim(),
-    )
+    .map((segment) => segment.replace(/[()]/g, " ").replace(/\s+/g, " ").trim())
     .filter(Boolean);
 }
 
@@ -172,11 +167,7 @@ function stripEducationExtras(raw, row) {
 // field so nothing an ATS reads is left behind in the structured rows.
 export function formatEducationRow(row) {
   const head = stripEducationExtras(row.raw || row.degree || "", row) || row.degree || "";
-  const scoreText = row.score
-    ? row.gradeType === "cgpa"
-      ? `CGPA ${row.score}`
-      : row.score
-    : "";
+  const scoreText = row.score ? (row.gradeType === "cgpa" ? `CGPA ${row.score}` : row.score) : "";
   const tail = [row.year, scoreText].filter(Boolean).join(" · ");
   const line = [head, row.institution].filter(Boolean).join(" — ");
   return tail ? `${line} (${tail})` : line;
@@ -299,8 +290,10 @@ export function extractCertifications(lines) {
   for (const rawLine of lines || []) {
     const line = String(rawLine).trim();
     if (!line) continue;
-    if (/^(certifications?|certificates?|licen[cs]es?|achievements?|awards?)\s*:?$/i.test(line)) continue;
-    if (/^(credential|id|year|issuer|issued by|valid till|expiry)\s*[:.]?\s*$/i.test(line)) continue;
+    if (/^(certifications?|certificates?|licen[cs]es?|achievements?|awards?)\s*:?$/i.test(line))
+      continue;
+    if (/^(credential|id|year|issuer|issued by|valid till|expiry)\s*[:.]?\s*$/i.test(line))
+      continue;
 
     const credentialMatch = line.match(
       /(?:credential|licen[cs]e|certificate|cert|badge|registration|reg)\s*(?:id|no|no\.|number|code|#)\s*[:.]?\s*([A-Za-z0-9][A-Za-z0-9\-_.]{3,})/i,
@@ -330,7 +323,9 @@ export function extractCertifications(lines) {
     if (parenIssuer) working = working.replace(parenIssuer[0], " ");
 
     if (!issuer) {
-      const byIssuer = working.match(/(?:issued\s*by|by)\s+([A-Za-z][A-Za-z0-9&.,'\- ]{2,50})\s*$/i);
+      const byIssuer = working.match(
+        /(?:issued\s*by|by)\s+([A-Za-z][A-Za-z0-9&.,'\- ]{2,50})\s*$/i,
+      );
       if (byIssuer) {
         issuer = byIssuer[1].trim();
         working = working.replace(byIssuer[0], " ");
@@ -357,7 +352,11 @@ export function extractCertifications(lines) {
       issuer,
       year: yearMatch ? yearMatch[1] : "",
       credentialId: credentialMatch ? credentialMatch[1] : "",
-      url: urlMatch ? (urlMatch[0].startsWith("http") ? urlMatch[0] : `https://${urlMatch[0]}`) : "",
+      url: urlMatch
+        ? urlMatch[0].startsWith("http")
+          ? urlMatch[0]
+          : `https://${urlMatch[0]}`
+        : "",
       raw: line,
     });
   }
@@ -429,7 +428,7 @@ export function extractPersonalFields(lines) {
       .filter(Boolean);
 
     for (const cell of cells) {
-      const match = cell.match(/^([A-Za-z][A-Za-z\s'./()\-]{1,32}?)\s*[:.\-–]\s*(.+)$/);
+      const match = cell.match(/^([A-Za-z][A-Za-z\s'./()-]{1,32}?)\s*[:.\-–]\s*(.+)$/);
       if (!match) continue;
       const entry = personalKeyFor(match[1]);
       if (!entry) continue;
@@ -804,12 +803,7 @@ export function computeCompletenessScore(fields) {
   );
 
   const skillCount = fields.skillsList?.length || 0;
-  check(
-    16,
-    skillCount >= 5,
-    `${skillCount} skills identified`,
-    "Fewer than 5 skills detected",
-  );
+  check(16, skillCount >= 5, `${skillCount} skills identified`, "Fewer than 5 skills detected");
 
   check(
     18,
@@ -831,15 +825,8 @@ export function computeCompletenessScore(fields) {
   );
 
   const projects = fields.structuredProjects || [];
-  check(
-    4,
-    projects.length > 0,
-    `${projects.length} project(s) listed`,
-    "No projects listed",
-  );
-  const projectsWithRole = projects.some(
-    (p) => p.role || (p.responsibilities || []).length > 0,
-  );
+  check(4, projects.length > 0, `${projects.length} project(s) listed`, "No projects listed");
+  const projectsWithRole = projects.some((p) => p.role || (p.responsibilities || []).length > 0);
   check(
     4,
     projectsWithRole,
@@ -871,7 +858,12 @@ export function computeCompletenessScore(fields) {
   const eligibility = fields.personal || {};
   check(
     4,
-    Boolean(eligibility.languages || eligibility.nationality || eligibility.passport || eligibility.workAuthorization),
+    Boolean(
+      eligibility.languages ||
+      eligibility.nationality ||
+      eligibility.passport ||
+      eligibility.workAuthorization,
+    ),
     "Languages / work eligibility",
     "No languages, nationality or work authorization",
   );

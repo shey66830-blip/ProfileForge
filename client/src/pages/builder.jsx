@@ -148,7 +148,11 @@ const SECTION_TITLES = {
 };
 
 // Ready-made answers for the eligibility questions that block overseas offers.
-const RELOCATE_OPTIONS = ["Yes — open to relocating", "Yes — within my region", "No — local candidates only"];
+const RELOCATE_OPTIONS = [
+  "Yes — open to relocating",
+  "Yes — within my region",
+  "No — local candidates only",
+];
 const WORK_AUTH_PRESETS = [
   "Citizen / PR — no sponsorship needed",
   "Requires work visa sponsorship",
@@ -623,9 +627,7 @@ export default function Builder({
                 key={preset}
                 type="button"
                 className="pf-chip"
-                onClick={() =>
-                  addRow("educationRows", { ...BLANK_EDUCATION_ROW, degree: preset })
-                }
+                onClick={() => addRow("educationRows", { ...BLANK_EDUCATION_ROW, degree: preset })}
               >
                 + {preset}
               </button>
@@ -818,7 +820,9 @@ export default function Builder({
                     aria-label={`Certificate ${index + 1} name`}
                     placeholder="Certificate name"
                     value={row.name || ""}
-                    onChange={(e) => updateRow("certificationsRows", index, { name: e.target.value })}
+                    onChange={(e) =>
+                      updateRow("certificationsRows", index, { name: e.target.value })
+                    }
                   />
                   <input
                     aria-label={`Certificate ${index + 1} issuer`}
@@ -832,7 +836,9 @@ export default function Builder({
                     aria-label={`Certificate ${index + 1} year`}
                     placeholder="Year (2023)"
                     value={row.year || ""}
-                    onChange={(e) => updateRow("certificationsRows", index, { year: e.target.value })}
+                    onChange={(e) =>
+                      updateRow("certificationsRows", index, { year: e.target.value })
+                    }
                   />
                   <input
                     aria-label={`Certificate ${index + 1} credential id`}
@@ -861,8 +867,8 @@ export default function Builder({
                   {row.fileName && <span className="pf-attach-name">{row.fileName}</span>}
                   {row.file && <img className="pf-attach-preview" src={row.file} alt="" />}
                   <small className="pf-attach-note">
-                    Image or PDF · images are kept with the document, PDFs are identified by
-                    name and the credential ID above.
+                    Image or PDF · images are kept with the document, PDFs are identified by name
+                    and the credential ID above.
                   </small>
                 </div>
               </div>

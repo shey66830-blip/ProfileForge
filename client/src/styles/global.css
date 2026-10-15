@@ -7084,6 +7084,7 @@ textarea:focus-visible {
 .pf-row input,
 .pf-row textarea {
   margin-bottom: 0;
+  border-radius: 10px;
 }
 .pf-row textarea {
   min-height: 92px;
