@@ -1,7 +1,14 @@
 import React, { useMemo, useRef, useState } from "react";
 import { saveDocumentToBackend } from "../services/documentService.js";
 import { uploadResumeFile } from "../services/uploadService.js";
-import { generateDocumentText, TEMPLATES } from "../utils/generators.js";
+import {
+  certificationsToText,
+  educationToText,
+  generateDocumentText,
+  personalToText,
+  projectsToText,
+  TEMPLATES,
+} from "../utils/generators.js";
 import {
   analyzeSignal,
   computeCompleteness,
@@ -20,26 +27,112 @@ const blankForm = {
   linkedin: "",
   github: "",
   portfolio: "",
-  education: "",
-  skills: "",
-  experience: "",
-  projects: "",
   summary: "",
+  experience: "",
+  skills: "",
   photo: "",
+  // Structured rows: each field is its own input so a qualification, a project
+  // role or a credential can be extracted, corrected and verified individually.
+  educationRows: [],
+  education: "",
+  projectsRows: [],
+  projects: "",
+  certificationsRows: [],
+  certifications: "",
+  achievements: "",
+  personalDetails: "",
+  // Eligibility details that overseas employers ask for.
+  nationality: "",
+  languages: "",
+  workAuthorization: "",
+  relocate: "",
+  passport: "",
+  nric: "",
+  dob: "",
+  gender: "",
+  maritalStatus: "",
   age: "",
   height: "",
   family: "",
   partnerPreference: "",
 };
 
+const BLANK_EDUCATION_ROW = {
+  degree: "",
+  field: "",
+  institution: "",
+  year: "",
+  score: "",
+  gradeType: "",
+};
+
+const BLANK_PROJECT_ROW = {
+  name: "",
+  role: "",
+  responsibilities: "",
+  client: "",
+  period: "",
+  product: "",
+};
+
+const BLANK_CERTIFICATION_ROW = {
+  name: "",
+  issuer: "",
+  year: "",
+  credentialId: "",
+  url: "",
+  file: "",
+  fileName: "",
+};
+
 // Which section order the preview paints for each layout. This is what makes
 // the five templates read as genuinely different documents, not recolours.
 const PREVIEW_ORDER = {
-  modern: ["summary", "skills", "experience", "education", "projects"],
-  classic: ["summary", "education", "skills", "experience", "projects"],
-  minimal: ["summary", "skills", "education", "experience", "projects"],
-  executive: ["summary", "experience", "projects", "education", "skills"],
-  technical: ["skills", "projects", "experience", "education", "summary"],
+  modern: [
+    "summary",
+    "skills",
+    "experience",
+    "projects",
+    "education",
+    "certifications",
+    "personal",
+  ],
+  classic: [
+    "summary",
+    "education",
+    "skills",
+    "experience",
+    "projects",
+    "certifications",
+    "personal",
+  ],
+  minimal: [
+    "summary",
+    "skills",
+    "education",
+    "experience",
+    "projects",
+    "certifications",
+    "personal",
+  ],
+  executive: [
+    "summary",
+    "experience",
+    "projects",
+    "education",
+    "certifications",
+    "skills",
+    "personal",
+  ],
+  technical: [
+    "skills",
+    "projects",
+    "experience",
+    "certifications",
+    "education",
+    "summary",
+    "personal",
+  ],
 };
 
 const SECTION_TITLES = {
@@ -48,9 +141,20 @@ const SECTION_TITLES = {
   experience: "Work History",
   education: "Education",
   projects: "Projects",
+  certifications: "Certifications & Achievements",
+  personal: "Personal & Work Eligibility",
   family: "Family Background",
   partnerPreference: "Partner Preference",
 };
+
+// Ready-made answers for the eligibility questions that block overseas offers.
+const RELOCATE_OPTIONS = ["Yes — open to relocating", "Yes — within my region", "No — local candidates only"];
+const WORK_AUTH_PRESETS = [
+  "Citizen / PR — no sponsorship needed",
+  "Requires work visa sponsorship",
+  "Student / graduate visa",
+  "Open work permit",
+];
 
 const BULLET_STARTERS = ["Led", "Built", "Increased", "Cut", "Launched"];
 const EDUCATION_PRESETS = ["B.Com", "B.Tech", "B.Sc", "BBA", "MBA", "M.Tech", "Diploma"];
@@ -102,13 +206,17 @@ function initials(name) {
 // The shareable artifact: a template-aware rendering of the same form state
 // that the export path serialises to text.
 function PreviewResume({ form, template, type }) {
+  // The paper is rendered from the same text helpers the save uses, so what the
+  // user sees live is exactly what the document will contain.
   const sections = useMemo(() => {
     const entries = {
       summary: form.summary,
       skills: form.skills,
       experience: form.experience,
-      education: form.education,
-      projects: form.projects,
+      education: educationToText(form),
+      projects: projectsToText(form),
+      certifications: certificationsToText(form),
+      personal: personalToText(form),
       family: type === "biodata" ? form.family : "",
       partnerPreference: type === "biodata" ? form.partnerPreference : "",
     };
@@ -146,10 +254,17 @@ function PreviewResume({ form, template, type }) {
           <h4>{section.title}</h4>
           {section.body
             .split(/\r?\n/)
-            .map((line) => line.trim())
-            .filter(Boolean)
+            .map((line) => ({
+              text: line.replace(/^[\s•\-*]+/, "").trim(),
+              // Nested lines (project client/period/role, responsibilities)
+              // keep their indent so the hierarchy still reads on paper.
+              nested: /^\s{2,}/.test(line),
+            }))
+            .filter((line) => line.text)
             .map((line, index) => (
-              <p key={index}>{line.replace(/^[•\-*]\s*/, "")}</p>
+              <p key={index} className={line.nested ? "pf-pv-sub" : undefined}>
+                {line.text}
+              </p>
             ))}
         </section>
       ))}
@@ -234,7 +349,40 @@ export default function Builder({
     setError("");
   };
 
-  const completeness = computeCompleteness(form);
+  // Row helpers — education, projects and certificates are edited as rows so
+  // every extracted detail keeps its own input.
+  const addRow = (field, blank) => {
+    setForm((prev) => ({ ...prev, [field]: [...(prev[field] || []), { ...blank }] }));
+    setError("");
+  };
+
+  const updateRow = (field, index, patch) => {
+    setForm((prev) => ({
+      ...prev,
+      [field]: (prev[field] || []).map((row, i) => (i === index ? { ...row, ...patch } : row)),
+    }));
+    setError("");
+  };
+
+  const removeRow = (field, index) => {
+    setForm((prev) => ({ ...prev, [field]: (prev[field] || []).filter((_, i) => i !== index) }));
+    setError("");
+  };
+
+  // The rows are what the save, the export and the AI analysis will read, so
+  // completeness, the step ticks and the signal all score this same view.
+  const scored = useMemo(
+    () => ({
+      ...form,
+      education: educationToText(form),
+      projects: projectsToText(form),
+      certifications: certificationsToText(form),
+      personalDetails: personalToText(form),
+    }),
+    [form],
+  );
+
+  const completeness = computeCompleteness(scored);
   const summaryWords = wordCount(form.summary);
 
   const handlePhoto = async (event) => {
@@ -475,18 +623,273 @@ export default function Builder({
                 key={preset}
                 type="button"
                 className="pf-chip"
-                onClick={() => appendLine("education", `${preset}, , 20`)}
+                onClick={() =>
+                  addRow("educationRows", { ...BLANK_EDUCATION_ROW, degree: preset })
+                }
               >
                 + {preset}
               </button>
             ))}
           </div>
-          <textarea
-            className="pf-textarea lg"
-            placeholder={"B.Com, Delhi University, 2019\n12th (CBSE), Kendriya Vidyalaya, 2016"}
-            value={form.education}
-            onChange={(e) => update("education", e.target.value)}
-          />
+
+          <div className="pf-rows">
+            {(form.educationRows || []).map((row, index) => (
+              <div className="pf-row" key={index}>
+                <div className="pf-row-head">
+                  <span className="pf-row-index">{index + 1}</span>
+                  <strong>{row.degree || row.institution || "New qualification"}</strong>
+                  <button
+                    type="button"
+                    className="pf-row-remove"
+                    onClick={() => removeRow("educationRows", index)}
+                  >
+                    Remove
+                  </button>
+                </div>
+                <div className="pf-row-grid">
+                  <input
+                    aria-label={`Qualification ${index + 1} degree`}
+                    placeholder="Degree / standard (B.Tech)"
+                    value={row.degree || ""}
+                    onChange={(e) => updateRow("educationRows", index, { degree: e.target.value })}
+                  />
+                  <input
+                    aria-label={`Qualification ${index + 1} field of study`}
+                    placeholder="Field (Computer Science)"
+                    value={row.field || ""}
+                    onChange={(e) => updateRow("educationRows", index, { field: e.target.value })}
+                  />
+                  <input
+                    aria-label={`Qualification ${index + 1} institute`}
+                    placeholder="School / college / university"
+                    value={row.institution || ""}
+                    onChange={(e) =>
+                      updateRow("educationRows", index, { institution: e.target.value })
+                    }
+                  />
+                  <input
+                    aria-label={`Qualification ${index + 1} year`}
+                    placeholder="Year (2016 - 2020)"
+                    value={row.year || ""}
+                    onChange={(e) => updateRow("educationRows", index, { year: e.target.value })}
+                  />
+                  <input
+                    aria-label={`Qualification ${index + 1} score`}
+                    placeholder="CGPA / % (8.7)"
+                    value={row.score || ""}
+                    onChange={(e) => updateRow("educationRows", index, { score: e.target.value })}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <button
+            type="button"
+            className="pf-row-add"
+            onClick={() => addRow("educationRows", BLANK_EDUCATION_ROW)}
+          >
+            + Add another qualification
+          </button>
+
+          <Field id="pf-education-notes" label="Anything else about your education">
+            <textarea
+              id="pf-education-notes"
+              className="pf-textarea"
+              placeholder="Scholarships, relevant coursework, exchange semester…"
+              value={form.education}
+              onChange={(e) => update("education", e.target.value)}
+            />
+          </Field>
+        </div>
+      ),
+    };
+
+    const projects = {
+      id: "projects",
+      label: "Projects",
+      optional: true,
+      required: ["projects"],
+      question: "Which projects prove you can do the job?",
+      hint: "For each project, name your role and what you were responsible for — that is the first thing an interviewer asks.",
+      body: (
+        <div className="pf-step-wide">
+          <div className="pf-rows">
+            {(form.projectsRows || []).map((row, index) => (
+              <div className="pf-row" key={index}>
+                <div className="pf-row-head">
+                  <span className="pf-row-index">{index + 1}</span>
+                  <strong>{row.name || "New project"}</strong>
+                  <button
+                    type="button"
+                    className="pf-row-remove"
+                    onClick={() => removeRow("projectsRows", index)}
+                  >
+                    Remove
+                  </button>
+                </div>
+                <div className="pf-row-grid two">
+                  <input
+                    aria-label={`Project ${index + 1} name`}
+                    placeholder="Project name"
+                    value={row.name || ""}
+                    onChange={(e) => updateRow("projectsRows", index, { name: e.target.value })}
+                  />
+                  <input
+                    aria-label={`Project ${index + 1} role`}
+                    placeholder="Your role (Lead Engineer)"
+                    value={row.role || ""}
+                    onChange={(e) => updateRow("projectsRows", index, { role: e.target.value })}
+                  />
+                  <input
+                    aria-label={`Project ${index + 1} client`}
+                    placeholder="Client / company"
+                    value={row.client || ""}
+                    onChange={(e) => updateRow("projectsRows", index, { client: e.target.value })}
+                  />
+                  <input
+                    aria-label={`Project ${index + 1} period`}
+                    placeholder="Period (2022 - 2023)"
+                    value={row.period || ""}
+                    onChange={(e) => updateRow("projectsRows", index, { period: e.target.value })}
+                  />
+                </div>
+                <textarea
+                  aria-label={`Project ${index + 1} responsibilities`}
+                  className="pf-textarea"
+                  placeholder={
+                    "One responsibility per line:\nDesigned the matching algorithm handling 2M transactions per day.\nOwned the rollout across 3 markets."
+                  }
+                  value={row.responsibilities || ""}
+                  onChange={(e) =>
+                    updateRow("projectsRows", index, { responsibilities: e.target.value })
+                  }
+                />
+              </div>
+            ))}
+          </div>
+
+          <button
+            type="button"
+            className="pf-row-add"
+            onClick={() => addRow("projectsRows", BLANK_PROJECT_ROW)}
+          >
+            + Add a project
+          </button>
+
+          <Field id="pf-projects-notes" label="Other projects worth mentioning">
+            <textarea
+              id="pf-projects-notes"
+              className="pf-textarea"
+              placeholder="Built a repeat-customer tracker that lifted retention 14%"
+              value={form.projects}
+              onChange={(e) => update("projects", e.target.value)}
+            />
+          </Field>
+        </div>
+      ),
+    };
+
+    const certifications = {
+      id: "certifications",
+      label: "Certifications",
+      optional: true,
+      required: ["certifications"],
+      question: "What have you earned that others can verify?",
+      hint: "Add the issuer, then the credential ID or verification link — Coursera, Credly, AWS and NPTEL all hand you one.",
+      body: (
+        <div className="pf-step-wide">
+          <div className="pf-rows">
+            {(form.certificationsRows || []).map((row, index) => (
+              <div className="pf-row" key={index}>
+                <div className="pf-row-head">
+                  <span className="pf-row-index">{index + 1}</span>
+                  <strong>{row.name || "New certificate"}</strong>
+                  <button
+                    type="button"
+                    className="pf-row-remove"
+                    onClick={() => removeRow("certificationsRows", index)}
+                  >
+                    Remove
+                  </button>
+                </div>
+                <div className="pf-row-grid two">
+                  <input
+                    aria-label={`Certificate ${index + 1} name`}
+                    placeholder="Certificate name"
+                    value={row.name || ""}
+                    onChange={(e) => updateRow("certificationsRows", index, { name: e.target.value })}
+                  />
+                  <input
+                    aria-label={`Certificate ${index + 1} issuer`}
+                    placeholder="Issuer (Coursera, AWS)"
+                    value={row.issuer || ""}
+                    onChange={(e) =>
+                      updateRow("certificationsRows", index, { issuer: e.target.value })
+                    }
+                  />
+                  <input
+                    aria-label={`Certificate ${index + 1} year`}
+                    placeholder="Year (2023)"
+                    value={row.year || ""}
+                    onChange={(e) => updateRow("certificationsRows", index, { year: e.target.value })}
+                  />
+                  <input
+                    aria-label={`Certificate ${index + 1} credential id`}
+                    placeholder="Credential ID (AB12CD34)"
+                    value={row.credentialId || ""}
+                    onChange={(e) =>
+                      updateRow("certificationsRows", index, { credentialId: e.target.value })
+                    }
+                  />
+                </div>
+                <input
+                  aria-label={`Certificate ${index + 1} verification link`}
+                  placeholder="Verification link (coursera.org/verify/…)"
+                  value={row.url || ""}
+                  onChange={(e) => updateRow("certificationsRows", index, { url: e.target.value })}
+                />
+                <div className="pf-row-attach">
+                  <label className="pf-attach-btn">
+                    <input
+                      type="file"
+                      accept="image/png,image/jpeg,image/webp,application/pdf"
+                      onChange={(e) => attachCertificate(index, e)}
+                    />
+                    {row.file || row.fileName ? "Replace certificate" : "Attach certificate"}
+                  </label>
+                  {row.fileName && <span className="pf-attach-name">{row.fileName}</span>}
+                  {row.file && <img className="pf-attach-preview" src={row.file} alt="" />}
+                  <small className="pf-attach-note">
+                    Image or PDF · images are kept with the document, PDFs are identified by
+                    name and the credential ID above.
+                  </small>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <button
+            type="button"
+            className="pf-row-add"
+            onClick={() => addRow("certificationsRows", BLANK_CERTIFICATION_ROW)}
+          >
+            + Add a certificate
+          </button>
+
+          <Field
+            id="pf-achievements"
+            label="Achievements"
+            hint="Awards, rankings, hackathons, publications — one per line."
+          >
+            <textarea
+              id="pf-achievements"
+              className="pf-textarea"
+              placeholder="Winner, National Coding Championship 2019"
+              value={form.achievements}
+              onChange={(e) => update("achievements", e.target.value)}
+            />
+          </Field>
         </div>
       ),
     };
@@ -565,15 +968,136 @@ export default function Builder({
               {summaryWords} words · target 30–120
             </span>
           </div>
-          <Field id="pf-projects" label="Projects worth mentioning">
-            <textarea
-              id="pf-projects"
-              className="pf-textarea"
-              placeholder="Built a repeat-customer tracker that lifted retention 14%"
-              value={form.projects}
-              onChange={(e) => update("projects", e.target.value)}
+        </div>
+      ),
+    };
+
+    // Overseas applications live or die on these answers, so they get their own
+    // step instead of being buried in the free-text personal details.
+    const eligibility = {
+      id: "personal",
+      label: "Personal",
+      optional: true,
+      required: ["languages"],
+      question: "What does an overseas employer need to know?",
+      hint: "Nationality, languages and work-authorization answers decide whether your application is even processed.",
+      body: (
+        <div className="pf-step-wide">
+          <div className="pf-grid-2">
+            <Field id="pf-nationality" label="Nationality">
+              <input
+                id="pf-nationality"
+                placeholder="Indian"
+                value={form.nationality || ""}
+                onChange={(e) => update("nationality", e.target.value)}
+              />
+            </Field>
+            <Field
+              id="pf-languages"
+              label="Languages"
+              hint="Add proficiency — Fluent, Native, Conversational."
+            >
+              <input
+                id="pf-languages"
+                placeholder="English (Fluent), Tamil (Native)"
+                value={form.languages || ""}
+                onChange={(e) => update("languages", e.target.value)}
+              />
+            </Field>
+          </div>
+
+          <Field
+            id="pf-workauth"
+            label="Work authorization"
+            hint="Say plainly whether you need sponsorship."
+          >
+            <input
+              id="pf-workauth"
+              placeholder="Requires work visa sponsorship"
+              value={form.workAuthorization || ""}
+              onChange={(e) => update("workAuthorization", e.target.value)}
             />
           </Field>
+          <div className="pf-chip-row">
+            <span className="pf-chip-label">Common answers</span>
+            {WORK_AUTH_PRESETS.map((preset) => (
+              <button
+                key={preset}
+                type="button"
+                className="pf-chip"
+                onClick={() => update("workAuthorization", preset)}
+              >
+                {preset}
+              </button>
+            ))}
+          </div>
+
+          <Field id="pf-relocate" label="Willing to relocate">
+            <input
+              id="pf-relocate"
+              placeholder="Yes — open to relocating"
+              value={form.relocate || ""}
+              onChange={(e) => update("relocate", e.target.value)}
+            />
+          </Field>
+          <div className="pf-chip-row">
+            {RELOCATE_OPTIONS.map((option) => (
+              <button
+                key={option}
+                type="button"
+                className="pf-chip"
+                onClick={() => update("relocate", option)}
+              >
+                {option}
+              </button>
+            ))}
+          </div>
+
+          <div className="pf-grid-2">
+            <Field id="pf-passport" label="Passport number" hint="Only if the role asks for it.">
+              <input
+                id="pf-passport"
+                placeholder="M1234567"
+                value={form.passport || ""}
+                onChange={(e) => update("passport", e.target.value)}
+              />
+            </Field>
+            <Field id="pf-nric" label="NRIC / FIN / National ID">
+              <input
+                id="pf-nric"
+                placeholder="S7891234B"
+                value={form.nric || ""}
+                onChange={(e) => update("nric", e.target.value)}
+              />
+            </Field>
+          </div>
+
+          <div className="pf-grid-3">
+            <Field id="pf-dob" label="Date of birth">
+              <input
+                id="pf-dob"
+                placeholder="14 Aug 1998"
+                value={form.dob || ""}
+                onChange={(e) => update("dob", e.target.value)}
+              />
+            </Field>
+            <Field id="pf-gender" label="Gender">
+              <input
+                id="pf-gender"
+                placeholder="Prefer not to say"
+                value={form.gender || ""}
+                onChange={(e) => update("gender", e.target.value)}
+              />
+            </Field>
+            <Field id="pf-marital" label="Marital status">
+              <input
+                id="pf-marital"
+                placeholder="Single"
+                value={form.maritalStatus || ""}
+                onChange={(e) => update("maritalStatus", e.target.value)}
+              />
+            </Field>
+          </div>
         </div>
       ),
     };
@@ -642,8 +1166,18 @@ export default function Builder({
     };
 
     return type === "biodata"
-      ? [heading, personal, education, skills, summary, finalize]
-      : [heading, work, education, skills, summary, finalize];
+      ? [heading, personal, education, skills, projects, certifications, summary, finalize]
+      : [
+          heading,
+          work,
+          education,
+          skills,
+          projects,
+          certifications,
+          summary,
+          eligibility,
+          finalize,
+        ];
   }, [
     form,
     type,
@@ -656,16 +1190,36 @@ export default function Builder({
     completeness.missing,
   ]);
 
-  const progress = computeStepProgress(steps, form);
+  const progress = computeStepProgress(steps, scored);
   const recommended = progress.steps
     .filter((step) => step.optional && !step.complete)
     .map((step) => step.label);
-  const signal = useMemo(() => analyzeSignal(form), [form]);
+  const signal = useMemo(() => analyzeSignal(scored), [scored]);
   // Clamp once so the question, the step counter and the nav button always
   // agree, even if a future step list is shorter than the current index.
   const safeIndex = Math.min(stepIndex, steps.length - 1);
   const active = steps[safeIndex];
   const isLast = safeIndex === steps.length - 1;
+
+  const attachCertificate = async (index, event) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      // A PDF cannot be embedded without blowing past the API payload limit, so
+      // the file name is kept and the verification link carries the proof.
+      updateRow("certificationsRows", index, { fileName: file.name, file: "" });
+      return;
+    }
+
+    try {
+      const dataUrl = await readImageAsDataURL(file, 520);
+      updateRow("certificationsRows", index, { file: dataUrl, fileName: file.name });
+    } catch {
+      setError("That certificate image could not be read. Try a JPG or PNG.");
+    }
+  };
 
   const handleUpload = async (event) => {
     const file = event.target.files?.[0];
@@ -691,6 +1245,10 @@ export default function Builder({
       skillsByCategory,
       links,
       audit,
+      structuredEducation,
+      structuredProjects,
+      structuredCertifications,
+      personal,
       ...formFields
     } = result.fields;
 
@@ -698,6 +1256,62 @@ export default function Builder({
     if (links?.linkedin && !merged.linkedin) merged.linkedin = links.linkedin;
     if (links?.github && !merged.github) merged.github = links.github;
     if (links?.portfolio && !merged.portfolio) merged.portfolio = links.portfolio;
+
+    // Extracted rows become editable inputs. Each extractor's plain-text
+    // mirror is cleared when it has rows, because the rows are what the save
+    // and the export render — keeping both would duplicate the same content.
+    if (structuredEducation?.length) {
+      merged.educationRows = structuredEducation.map((row) => ({
+        degree: row.degree || "",
+        field: row.field || "",
+        institution: row.institution || "",
+        year: row.year || "",
+        score: row.score || "",
+        gradeType: row.gradeType || "",
+      }));
+      merged.education = "";
+    }
+
+    if (structuredProjects?.length) {
+      merged.projectsRows = structuredProjects.map((row) => ({
+        name: row.name || "",
+        role: row.role || "",
+        responsibilities: (row.responsibilities || []).join("\n"),
+        client: row.client || "",
+        period: row.period || "",
+        product: row.product || "",
+      }));
+      merged.projects = "";
+    }
+
+    if (structuredCertifications?.length) {
+      merged.certificationsRows = structuredCertifications.map((row) => ({
+        name: row.name || "",
+        issuer: row.issuer || "",
+        year: row.year || "",
+        credentialId: row.credentialId || "",
+        url: row.url || "",
+        file: "",
+        fileName: "",
+      }));
+      merged.certifications = "";
+    }
+
+    if (personal) {
+      for (const key of [
+        "nationality",
+        "languages",
+        "workAuthorization",
+        "relocate",
+        "passport",
+        "nric",
+        "dob",
+        "gender",
+        "maritalStatus",
+      ]) {
+        if (personal[key] && !merged[key]) merged[key] = personal[key];
+      }
+    }
 
     setForm(merged);
     setImprovements(tips || []);
