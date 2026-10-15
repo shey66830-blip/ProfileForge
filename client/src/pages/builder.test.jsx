@@ -17,9 +17,9 @@ const act = React.act;
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 
 const filled = {
-  name: "Saavi Patel",
-  profession: "Retail Sales Associate",
-  email: "saavi@example.com",
+  name: "Sanvi Jha",
+  profession: "Quant Finance",
+  email: "example@gmail.com",
   phone: "+91 22 1234 5677",
   location: "New Delhi, India",
   education: "B.Com, Delhi University, 2019",
@@ -146,8 +146,8 @@ describe("Builder wizard", () => {
 
     const preview = container.querySelector(".pf-pv");
     expect(preview.className).toContain("pf-pv--modern");
-    expect(preview.querySelector("h3").textContent).toBe("Saavi Patel");
-    expect(preview.querySelector(".pf-pv-role").textContent).toBe("Retail Sales Associate");
+    expect(preview.querySelector("h3").textContent).toBe("Sanvi Jha");
+    expect(preview.querySelector(".pf-pv-role").textContent).toBe("Quant Finance");
     expect(preview.textContent).toContain("Increased store revenue 22%");
     expect(container.querySelectorAll(".pf-pv-photo img")).toHaveLength(0);
     expect(container.querySelector(".pf-pv-photo").textContent).toBe("SP");

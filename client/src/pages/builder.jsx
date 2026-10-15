@@ -454,7 +454,7 @@ export default function Builder({
               <Field id="pf-name" label="Full name" required>
                 <input
                   id="pf-name"
-                  placeholder="Saavi Patel"
+                  placeholder="Sanvi Jha"
                   value={form.name}
                   onChange={(e) => update("name", e.target.value)}
                 />
@@ -462,7 +462,7 @@ export default function Builder({
               <Field id="pf-profession" label="Profession">
                 <input
                   id="pf-profession"
-                  placeholder="Retail Sales Associate"
+                  placeholder="Quant Finance"
                   value={form.profession || ""}
                   onChange={(e) => update("profession", e.target.value)}
                 />
@@ -473,7 +473,7 @@ export default function Builder({
               <input
                 id="pf-email"
                 type="email"
-                placeholder="saavi@example.com"
+                placeholder="example@gmail.com"
                 value={form.email}
                 onChange={(e) => update("email", e.target.value)}
               />
