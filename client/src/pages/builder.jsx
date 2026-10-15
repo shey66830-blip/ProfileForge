@@ -910,7 +910,7 @@ export default function Builder({
         <div className="pf-step-wide">
           <textarea
             className="pf-textarea lg"
-            placeholder={"Retail operations, Upselling, CRM, Inventory management"}
+            placeholder={"Financial analysis, Risk management, Python, Bloomberg"}
             value={form.skills}
             onChange={(e) => update("skills", e.target.value)}
           />
@@ -963,7 +963,7 @@ export default function Builder({
         <div className="pf-step-wide">
           <textarea
             className="pf-textarea lg"
-            placeholder="Retail sales associate with five years of experience boosting revenue and customer satisfaction…"
+            placeholder="Quantitative finance analyst with three years of experience building trading models and risk dashboards…"
             value={form.summary}
             onChange={(e) => update("summary", e.target.value)}
           />

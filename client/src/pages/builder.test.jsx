@@ -23,10 +23,10 @@ const filled = {
   phone: "+91 22 1234 5677",
   location: "New Delhi, India",
   education: "B.Com, Delhi University, 2019",
-  skills: "Retail operations, Upselling, CRM",
+  skills: "Financial analysis, Risk management, Python",
   experience: "Increased store revenue 22% by rebuilding the upsell script",
   summary:
-    "Retail sales associate with five years of experience boosting revenue and customer satisfaction across busy stores.",
+    "Quantitative finance analyst with three years of experience building trading models and risk dashboards",
   projectsRows: [
     { name: "Recon Engine", role: "Lead Engineer", responsibilities: "Owned the rollout." },
   ],
