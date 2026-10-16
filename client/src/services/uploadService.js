@@ -1,11 +1,11 @@
 import { API_BASE } from "../config.js";
 
-export async function uploadResumeFile(file) {
+async function postFile(endpoint, field, file, fallbackMessage) {
   try {
     const formData = new FormData();
-    formData.append("resume", file);
+    formData.append(field, file);
 
-    const res = await fetch(`${API_BASE}/upload/resume`, {
+    const res = await fetch(`${API_BASE}${endpoint}`, {
       method: "POST",
       credentials: "include",
       body: formData,
@@ -15,7 +15,17 @@ export async function uploadResumeFile(file) {
   } catch {
     return {
       ok: false,
-      message: "Upload failed. Backend not reachable.",
+      message: fallbackMessage,
     };
   }
+}
+
+// Resumes and CVs are read by different extractors on the server, so they have
+// their own endpoints and their own field names.
+export async function uploadResumeFile(file) {
+  return postFile("/upload/resume", "resume", file, "Upload failed. Backend not reachable.");
+}
+
+export async function uploadCvFile(file) {
+  return postFile("/upload/cv", "cv", file, "Upload failed. Backend not reachable.");
 }

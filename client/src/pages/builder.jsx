@@ -164,10 +164,10 @@ const BULLET_STARTERS = ["Led", "Built", "Increased", "Cut", "Launched"];
 const EDUCATION_PRESETS = ["B.Com", "B.Tech", "B.Sc", "BBA", "MBA", "M.Tech", "Diploma"];
 const SKILL_PRESETS = [
   "Excel",
-  "Customer service",
+  "Financial analysis",
   "Communication",
   "CRM",
-  "Inventory management",
+  "Risk management",
   "SQL",
   "Python",
   "React",
@@ -227,7 +227,7 @@ function PreviewResume({ form, template, type }) {
     const order = PREVIEW_ORDER[template] || PREVIEW_ORDER.modern;
     const extra = type === "biodata" ? ["family", "partnerPreference"] : [];
     return [...order, ...extra]
-      .map((key) => ({ key, title: SECTION_TITLES[key], body: (entries[key] || "").trim() }))
+      .map((key) => ({ key, title: SECTION_TITLES[key] || key, body: (entries[key] || "").trim() }))
       .filter((section) => section.body);
   }, [form, template, type]);
 
@@ -542,7 +542,7 @@ export default function Builder({
           <textarea
             className="pf-textarea lg"
             placeholder={
-              "Increased store revenue 22% by rebuilding the upsell script\nLed a team of 6 associates through festive season"
+              "Cut portfolio drawdown 22% by rebuilding the hedging model\nAutomated daily P&L reporting across 3 desks"
             }
             value={form.experience}
             onChange={(e) => update("experience", e.target.value)}
@@ -783,7 +783,7 @@ export default function Builder({
             <textarea
               id="pf-projects-notes"
               className="pf-textarea"
-              placeholder="Built a repeat-customer tracker that lifted retention 14%"
+              placeholder="Built a backtest pipeline that cut model run time 14%"
               value={form.projects}
               onChange={(e) => update("projects", e.target.value)}
             />
@@ -1332,6 +1332,7 @@ export default function Builder({
       setError("Age, height and family background are required for a biodata.");
       return false;
     }
+
     if (completeness.missing.length > 0) {
       setError(
         `Please add: ${completeness.missing.join(", ")}. Use the step list on the left to jump there.`,
@@ -1340,7 +1341,6 @@ export default function Builder({
     }
     return true;
   };
-
   const handleGenerate = async () => {
     if (!validate()) return;
 

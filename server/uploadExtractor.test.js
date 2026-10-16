@@ -11,7 +11,7 @@ const {
   formatEducationRow,
   categorizeSkills,
   extractFields,
-} = await import("./routes/uploadRoutes.js");
+} = await import("./services/resumeExtractor.js");
 
 describe("uploadExtractor: extractLinks", () => {
   it("extracts LinkedIn and GitHub URLs from text", () => {

@@ -19,6 +19,7 @@ import Navbar from "./components/Navbar.jsx";
 const Home = lazy(() => import("./pages/home.jsx"));
 const Dashboard = lazy(() => import("./pages/dashboard.jsx"));
 const Builder = lazy(() => import("./pages/builder.jsx"));
+const CvBuilder = lazy(() => import("./pages/cvBuilder.jsx"));
 const Output = lazy(() => import("./pages/output.jsx"));
 const JobSearch = lazy(() => import("./pages/jobSearch.jsx"));
 const Matchmaking = lazy(() => import("./pages/matchmaking.jsx"));
@@ -84,6 +85,9 @@ function GuestRoute({ user, authLoading, children }) {
 // The builder type comes from the route itself (/builder/resume, /builder/cv),
 // not from context state — otherwise the CV nav, home cards, and direct URLs
 // would all render the resume builder.
+//
+// A CV is its own page: it has different sections, its own checklist and its own
+// layouts, so it shares no wizard state with the resume builder.
 function BuilderRoute(props) {
   const { type } = useParams();
   const ctx = React.useContext(AppContext);
@@ -97,6 +101,9 @@ function BuilderRoute(props) {
         feature="The Biodata Builder creates marriage-biodata documents with family and partner-preference sections."
       />
     );
+  }
+  if (type === "cv") {
+    return <CvBuilder {...props} />;
   }
   return <Builder type={type} {...props} />;
 }

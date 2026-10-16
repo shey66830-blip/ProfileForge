@@ -13,18 +13,18 @@ import {
 } from "./resumeSignal.js";
 
 const fullResume = {
-  name: "Saavi Patel",
-  email: "saavi@example.com",
+  name: "Sanvi Jha",
+  email: "example@gmail.com",
   phone: "+91 22 1234 5677",
   location: "New Delhi, India",
   education: "B.Com, Delhi University, 2019",
-  skills: "Retail operations, Upselling, CRM, Inventory",
+  skills: "Financial analysis, Risk management, Python, SQL",
   experience:
-    "Increased store revenue 22% by rebuilding the upselling script\nLed a team of 6 associates during festive season",
-  projects: "Built a repeat-customer tracker that lifted retention 14%",
+    "Increased portfolio returns 22% by rebuilding the rebalancing script\nLed a team of 3 analysts through quarterly risk reviews",
+  projects: "Built a backtesting harness that cut model run time 14%",
   summary:
-    "Retail sales associate with five years of experience boosting revenue and customer satisfaction across high-traffic stores. Known for turning walk-ins into repeat buyers.",
-  linkedin: "https://linkedin.com/in/saavi",
+    "Quantitative finance analyst with five years of experience building trading models and risk dashboards across volatile markets. Known for turning research into repeatable signals.",
+  linkedin: "https://linkedin.com/in/sanvi",
 };
 
 describe("computeCompleteness", () => {
@@ -58,8 +58,8 @@ describe("computeStepProgress", () => {
 
   it("marks a step complete only when all of its required fields are filled", () => {
     const { steps: progress, percent } = computeStepProgress(steps, {
-      name: "Saavi Patel",
-      email: "saavi@example.com",
+      name: "Sanvi Jha",
+      email: "example@gmail.com",
       education: "B.Com",
       skills: "",
       experience: "",
@@ -79,12 +79,12 @@ describe("computeStepProgress", () => {
 
 describe("scoreAts", () => {
   it("scores a complete resume higher than a partial one", () => {
-    expect(scoreAts(fullResume)).toBeGreaterThan(scoreAts({ name: "Saavi", email: "s@x.com" }));
+    expect(scoreAts(fullResume)).toBeGreaterThan(scoreAts({ name: "Sanvi", email: "s@x.com" }));
   });
 
   it("penalises parser-hostile formatting", () => {
     const clean = scoreAts(fullResume);
-    const messy = scoreAts({ ...fullResume, experience: "Built store pipeline\t| grew sales |" });
+    const messy = scoreAts({ ...fullResume, experience: "Built risk pipeline\t| grew returns |" });
     expect(messy).toBeLessThan(clean);
   });
 
@@ -100,7 +100,7 @@ describe("scoreImpact", () => {
     const strong = scoreImpact({ experience: fullResume.experience });
     const weak = scoreImpact({
       experience:
-        "Responsible for the store front\nWorked on restocking shelves\nHelped with customer queries\nMy duties included reporting",
+        "Responsible for the trade book\nWorked on reconciling settlements\nHelped with client queries\nMy duties included reporting",
     });
     expect(strong).toBeGreaterThan(weak);
   });
@@ -112,8 +112,8 @@ describe("scoreImpact", () => {
 
 describe("scoreEvidence", () => {
   it("rewards quantified outcomes", () => {
-    const quantified = scoreEvidence({ experience: "Increased revenue 22% across 3 stores" });
-    const vague = scoreEvidence({ experience: "Helped customers with their shopping needs" });
+    const quantified = scoreEvidence({ experience: "Increased returns 22% across 3 portfolios" });
+    const vague = scoreEvidence({ experience: "Helped clients with their general queries" });
     expect(quantified).toBeGreaterThan(vague);
   });
 });
@@ -129,13 +129,13 @@ describe("analyzeSignal", () => {
   it("scores a strong resume above a weak one", () => {
     const strong = analyzeSignal(fullResume);
     const weak = analyzeSignal({
-      name: "Saavi",
-      email: "saavi@example.com",
+      name: "Sanvi",
+      email: "example@gmail.com",
       phone: "1234",
       location: "Delhi",
       education: "School",
-      skills: "Sales",
-      experience: "Responsible for the store front",
+      skills: "Excel",
+      experience: "Responsible for the trade book",
     });
     expect(strong.overall).toBeGreaterThan(weak.overall);
     expect(strong.tip.length).toBeGreaterThan(0);
@@ -144,7 +144,7 @@ describe("analyzeSignal", () => {
   it("reports the weakest dimension as the coaching target", () => {
     const signal = analyzeSignal({
       ...fullResume,
-      experience: "Responsible for the store front",
+      experience: "Responsible for the trade book",
       projects: "",
     });
     expect(["ats", "impact", "evidence"]).toContain(signal.weakest);

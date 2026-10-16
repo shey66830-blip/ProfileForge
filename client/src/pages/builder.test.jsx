@@ -24,7 +24,7 @@ const filled = {
   location: "New Delhi, India",
   education: "B.Com, Delhi University, 2019",
   skills: "Financial analysis, Risk management, Python",
-  experience: "Increased store revenue 22% by rebuilding the upsell script",
+  experience: "Cut portfolio drawdown 22% by rebuilding the hedging model",
   summary:
     "Quantitative finance analyst with three years of experience building trading models and risk dashboards",
   projectsRows: [
@@ -148,9 +148,9 @@ describe("Builder wizard", () => {
     expect(preview.className).toContain("pf-pv--modern");
     expect(preview.querySelector("h3").textContent).toBe("Sanvi Jha");
     expect(preview.querySelector(".pf-pv-role").textContent).toBe("Quant Finance");
-    expect(preview.textContent).toContain("Increased store revenue 22%");
+    expect(preview.textContent).toContain("Cut portfolio drawdown 22%");
     expect(container.querySelectorAll(".pf-pv-photo img")).toHaveLength(0);
-    expect(container.querySelector(".pf-pv-photo").textContent).toBe("SP");
+    expect(container.querySelector(".pf-pv-photo").textContent).toBe("SJ");
   });
 
   it("reports a recruiter signal with a coaching tip", () => {

@@ -16,7 +16,6 @@ export const TEMPLATES = [
 
 export function generateDocumentText(type, data, template = "modern") {
   if (type === "biodata") return generateBiodata(data);
-  if (type === "cv") return generateCV(data, template);
   return generateResume(data, template);
 }
 
@@ -75,57 +74,6 @@ function generateResume(data, template) {
   // Modern (default)
   return (
     `${header}\n\nPROFESSIONAL SUMMARY\n${summary}\n\nSKILLS\n${data.skills}\n\nEDUCATION\n${education}\n\nEXPERIENCE\n${experience}\n\nPROJECTS\n${projects}` +
-    section("CERTIFICATIONS", certs) +
-    section("PERSONAL DETAILS", personal)
-  );
-}
-
-function generateCV(data, template) {
-  const summary =
-    data.summary ||
-    "Focused learner with interest in academics, projects, and professional development.";
-  const education = educationToText(data);
-  const projects = projectsToText(data) || "Add academic projects or research work here.";
-  const experience =
-    data.experience || "Add internships, training, workshops, or achievements here.";
-  const certs = certificationsToText(data);
-  const personal = personalToText(data);
-
-  if (template === "classic") {
-    return (
-      `${data.name}\n${data.email} | ${data.phone} | ${data.location}\n\nACADEMIC PROFILE\n${summary}\n\nEDUCATION\n${education}\n\nRESEARCH & PROJECTS\n${projects}\n\nSKILLS & COMPETENCIES\n${data.skills}\n\nEXPERIENCE & TRAINING\n${experience}` +
-      section("CERTIFICATIONS", certs) +
-      section("PERSONAL DETAILS", personal)
-    );
-  }
-
-  if (template === "minimal") {
-    return (
-      `${data.name}\n${data.email} | ${data.phone} | ${data.location}\n\nProfile: ${summary}\nEducation: ${education}\nSkills: ${data.skills}\nProjects: ${projects}\nExperience: ${experience}` +
-      section("Certifications", certs) +
-      section("Personal Details", personal)
-    );
-  }
-
-  if (template === "executive") {
-    return (
-      `${data.name}\n${data.email} | ${data.phone} | ${data.location}\n\nPROFESSIONAL PROFILE\n${summary}\n\nCAREER EXPERIENCE\n${experience}\n\nEDUCATION\n${education}\n\nSKILLS & COMPETENCIES\n${data.skills}\n\nRESEARCH & PROJECTS\n${projects}` +
-      section("CERTIFICATIONS", certs) +
-      section("PERSONAL DETAILS", personal)
-    );
-  }
-
-  if (template === "technical") {
-    return (
-      `${data.name}\n${data.email} | ${data.phone} | ${data.location}\n\nTECHNICAL SKILLS\n${data.skills}\n\nPROJECTS / RESEARCH\n${projects}\n\nEXPERIENCE & TRAINING\n${experience}\n\nEDUCATION\n${education}\n\nACADEMIC PROFILE\n${summary}` +
-      section("CERTIFICATIONS", certs) +
-      section("PERSONAL DETAILS", personal)
-    );
-  }
-
-  // Modern (default)
-  return (
-    `${data.name}\n${data.email} | ${data.phone} | ${data.location}\n\nACADEMIC PROFILE\n${summary}\n\nEDUCATION\n${education}\n\nSKILLS\n${data.skills}\n\nPROJECTS / RESEARCH\n${projects}\n\nEXPERIENCE\n${experience}` +
     section("CERTIFICATIONS", certs) +
     section("PERSONAL DETAILS", personal)
   );
